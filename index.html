@@ -1,0 +1,335 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>ZIM Frame - Fit Template</title>
+
+<!-- Welcome to ZIM at https://zimjs.com - Code Creativity!              	        -->
+<!-- ZIM runs on the HTML Canvas powered by JavaScript and CreateJS https://createjs.com -->
+<!-- Founded by Inventor Dan Zen - http://danzen.com - Canadian New Media Award Winner 	-->
+<!-- ZIM is free to use. You can donate to help improve ZIM at http://zimjs.com/donate 	-->
+
+<script src="js/createjs_1.1_min.js"></script>
+<script src="js/zim_7.3.2.js"></script>
+<!-- use zimjs.com/distill for minified individual functions! -->
+
+<script>
+
+var ERICSSON_BLUE = "#032564"
+var WHITE = "#D2D2D2"
+var cellArray = new Array();
+var ueGuiContainer = new Container();
+var ueArray = new Array();
+
+function Cell(id, resources, startPosX, startPosY) {
+  this.id = id;
+  this.resources = resources;
+  this.startPosX = startPosX;
+  this.startPosY = startPosY;
+  
+  this.getInfo = function() 
+  {
+	return 'cell_id: ' + this.id + ', resources: ' + this.resources; 
+  };
+}
+
+function UE(id, startPosX, startPosY){
+
+	this.id = id;
+    this.startPosX = startPosX;
+    this.startPosY = startPosY;
+	this.psconnection = false;
+	this.activeSet = new Array();
+	this.getInfo = function()
+	{
+		return 'UE(id: ' + this.id + ', startCell: ' + this.startCell + ', activeSet = [' + this.activeSet.toString() + ']' + ')';
+	};
+	
+	this.setStartCell = function(cells)
+	{
+		var noOfCells = cells.length;
+		var distance = 9999;
+		var startCell = undefined;
+		
+		for(var i = 0; i<noOfCells; i++)
+		{
+			var c = dist(cells[i].gui.x, cells[i].gui.y,this.gui.x,this.gui.y);
+			
+			if(c < 300 && c < distance)
+			{
+				distance = c;
+				startCell = cells[i].id;
+			}
+		}
+		
+		this.startCell = startCell;
+		zog(this.getInfo());
+	};
+}
+// SCALING OPTIONS
+// scaling can have values as follows with full being the default
+// "fit"	sets canvas and stage to dimensions and scales to fit inside window size
+// "outside"	sets canvas and stage to dimensions and scales to fit outside window size
+// "full"	sets stage to window size with no scaling
+// "tagID"	add canvas to HTML tag of ID - set to dimensions if provided - no scaling
+
+var scaling = "fit"; // this will resize to fit inside the screen dimensions
+var width = 1920;
+var height = 1080;
+var color = ERICSSON_BLUE; // ZIM colors like green, blue, pink, faint, clear, etc. available globally
+var outerColor = dark; // any HTML colors like "violet", "#333", etc. fine to use
+
+var frame = new Frame(scaling, width, height, color, outerColor);
+
+frame.on("ready", function() {
+    zog("ready from ZIM Frame"); // logs in console (F12 - choose console)
+
+    var stage = frame.stage;
+    var stageW = frame.width;
+    var stageH = frame.height;
+
+	ueGuiContainer.addTo(stage);
+	ueGuiContainer.pos(0,0);
+    // see http://zimjs.com/learn.html for video and code tutorials
+    // see http://zimjs.com/docs.html for documentation
+    // see http://zimjs.com/bits.html for 64 Interactive Media techniques
+
+    // put your code here (you can delete this sample code)
+	
+	frame.loadAssets(["ue.png"], "assets/");
+	 
+	var console = new Container()
+		.addTo(stage)
+		.pos(1500, 1000);
+		
+	var commandInput = new TextArea({color:"#AAA", height:30, size:15, placeholder:"enter command"})
+		.center(console);
+	
+	var buttonLabel = new Label({
+	   text:"Enter",
+	   size:20,
+	   color:"white",
+	});
+	
+	var button = new Button({
+	   label:buttonLabel,
+	   width:100,
+	   height:30,
+	   color:"gray",
+	   rollColor: "orange",
+	   corner:0
+	})
+	.addTo(console)
+	.pos(250, 0);
+		
+	var commandHistoryLabels = new Container()
+		.addTo(console)
+		.pos(10, -30);
+		
+	var commandHistoryArray = new Array();
+	var commandHistoryBackground = new Rectangle(350, 920, "white")
+		.addTo(console)
+		.pos(0,-930);
+		
+	commandHistoryBackground.alpha = 0.2;
+
+	frame.on("complete", function() {
+		
+		 var cell_1 = new Cell(1,10,391,361);//cellId, resources, posX, posY
+		 cellArray.push(cell_1);
+		 guiAddCell(cell_1, stage);
+		 
+		 var cell_2 = new Cell(2,10,813,436);
+		 cellArray.push(cell_2);
+		 guiAddCell(cell_2, stage);
+		 
+		 var cell_3 = new Cell(3,10,547,772);
+		 cellArray.push(cell_3);
+		 guiAddCell(cell_3, stage);
+		 
+		 var ue_1 = new UE(1, 500, 500);
+		 ueArray.push(ue_1);
+		 guiAddUe(ue_1, stage);
+		 
+		 var ue_2 = new UE(2, 700, 500);
+		 ueArray.push(ue_2);
+		 guiAddUe(ue_2, stage);
+		 
+		 
+		 ueGuiContainer.on("pressup", function(e){
+			getUeById(e.target.name).setStartCell(cellArray);
+		 });
+		 
+		button.on("click", function()
+		{
+			submitCommand(commandInput,commandHistoryArray,commandHistoryLabels );
+		});
+		 
+		stage.update(); // this is needed to show any changes
+	}); //end of complete 
+	
+	stage.update();
+
+	
+}); // end of ready
+
+
+function guiAddCell(cell, stage){
+	//create cell gui container
+	cell.gui = new Container();
+	
+	stage.addChild(cell.gui);
+	cell.gui.bot();
+	
+	//setup start position
+	cell.gui.x = cell.startPosX; 
+	cell.gui.y = cell.startPosY;
+	
+	//cell label
+	var cell_Label = new Label("Cell_" + cell.id);
+	
+	//add label to gui container
+	cell.gui.addChild(cell_Label);
+	cell_Label.pos(-50,-25);
+	
+	var cell_Range = new Circle(300, WHITE);
+    cell_Range.blendMode = "multiply";
+	cell_Range.alpha = .5;
+	cell_Range.addTo(cell.gui);// add the circle to the container and center
+	cell_Range.pos(0,0);
+	
+	cell.gui.setBounds(0,0);
+	//cell.gui.outline();
+		
+	//zog("Gui pos(" + cell.gui.x + "," + cell.gui.y + ")" );
+	//zog("Range pos(" + cell_Range.x + "," + cell_Range.y + ")" );
+	//cell.gui.drag({currentTarget:true}); // will drag cell gui
+}
+
+function guiAddUe(ue, stage){
+	//create gui for whole UE interface
+	ue.gui = new Container().addTo(ueGuiContainer);
+	
+	//UE graphic
+	var phonePNG = frame.asset("ue.png").clone();
+	
+	phonePNG
+		.sca(0.5)
+		.addTo(ue.gui)
+		.centerReg();
+	
+	phonePNG.name = ue.id;
+	
+	//UE label
+	var ue_Label = new Label("UE_id_" + ue.id, 15);
+	
+	//add label to gui container
+	ue.gui.addChild(ue_Label);
+	ue_Label.pos(-25,-5);
+	ue_Label.top();
+	ue_Label.name = ue.id;
+	
+	ue.gui.pos(ue.startPosX,ue.startPosY);
+	ue.gui.drag({currentTarget:true});
+	
+	ue.gui.setBounds(0,0);
+	//ue.gui.outline();
+}
+
+function submitCommand(commandInput, commandHistoryArray, commandHistoryLabels){
+	
+	var command = commandInput.text.trim();
+	
+	if (command == "") return;
+	
+	commandOutput = command + ' - ' + checkCommand(command);
+	
+	commandHistoryArray.push(commandOutput);
+	
+	if(commandHistoryArray.length > 45)
+	{
+		commandHistoryArray.shift();
+	}
+	
+	commandHistoryLabels.removeAllChildren();
+	
+	var j = 0;
+	for(var i = commandHistoryArray.length-1; i >=0 ; i--)
+	{
+		var commandLabel = new Label({
+		   text:commandHistoryArray[i],
+		   size:15,
+		   color:"white",
+		})
+		.addTo(commandHistoryLabels)
+		.center();
+		
+		commandLabel.pos(0, j * (-20));
+		j++;
+	}
+	
+	commandInput.text = "";
+}
+
+function checkCommand(command){
+
+	var commandItems = command.split(" ");
+	
+	if(commandItems[0] == "cell")
+	{
+		//setup cell
+		if(getCellById(commandItems[1]) != undefined)
+		{
+			if(commandItems[2] == 'resources')
+			{
+				if (!isNaN(parseInt(commandItems[3], 10))) {
+					getCellById(commandItems[1]).resources = parseInt(commandItems[3], 10);
+					return 'EXECUTED';
+				} 
+				return 'resource value is not a number';
+			}
+			return 'unknown cell parameter';
+		}
+		return 'cell with id: ' + commandItems[1] + ' does not exist';
+	}
+	else if(commandItems[0] == "ue")
+	{
+		//setup ue
+	}
+	
+	return 'unknown command';
+}
+
+function getCellById(id){
+	var noOfCells = cellArray.length;
+	for(var i = 0; i<noOfCells; i++)
+	{
+		if(cellArray[i].id == id)
+		{
+			return cellArray[i];
+		}
+	}
+	return undefined;
+}
+
+function getUeById(id){
+	var noOfUEs = ueArray.length;
+	for(var i = 0; i<noOfUEs; i++)
+	{
+		if(ueArray[i].id == id)
+		{
+			return ueArray[i];
+		}
+	}
+	return undefined;
+}
+</script>
+
+<meta name="viewport" content="width=device-width, user-scalable=no" />
+
+</head>
+
+<body>
+<!-- canvas with id="myCanvas" is made by zim Frame -->
+</body>
+</html>
