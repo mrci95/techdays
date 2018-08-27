@@ -39,10 +39,26 @@ function UE(id, startPosX, startPosY){
     this.startPosX = startPosX;
     this.startPosY = startPosY;
 	this.psconnection = false;
+	this.csconnection = false;
+	this.connectionInfo = function(){
+		if(this.psconnection && this.csconnection)
+		{
+			return 'int_eul_hs_speech_12_2'
+		}
+		else if(this.psconnection)
+		{
+			return 'int_eul_hs'
+		}
+		else if(this.csconnection)
+		{
+			return 'speech_12_2'
+		}
+		return undefined;
+	}
 	this.activeSet = new Array();
 	this.getInfo = function()
 	{
-		return 'UE(id: ' + this.id + ', startCell: ' + this.startCell + ', activeSet = [' + this.activeSet.toString() + ']' + ')';
+		return 'UE(id: ' + this.id + ', startCell: ' + this.startCell + ', activeSet = [' + this.activeSet.toString() + ']' + ', connection: ' +  this.connectionInfo() + ')';
 	};
 	
 	this.setStartCell = function(cells)
@@ -65,6 +81,43 @@ function UE(id, startPosX, startPosY){
 		this.startCell = startCell;
 		zog(this.getInfo());
 	};
+	
+	this.updateActiveSet = function(cells)
+	{
+		var noOfCells = cells.length;
+		
+		for(var i = 0; i<noOfCells; i++)
+		{
+			var c = dist(cells[i].gui.x, cells[i].gui.y,this.gui.x,this.gui.y);
+			
+			var index = this.getActiveSetIndexFromCellId(cells[i].id);
+			
+			//zog('cell_id: ' + cells[i].id + ', ASindex: ' + index + ', distance: ' + c);
+			
+			if(c < 300 && index == -1 )
+			{
+				//zog('add cell ' + cells[i].id + ' to AS'); 
+				this.activeSet.push(cells[i].id);
+			}
+			else if (c > 300 && index != -1)
+			{
+				//zog('remove cell ' + cells[i].id + 'from AS'); 
+				this.activeSet.splice(index,1);
+			}
+		}
+		zog(this.getInfo());
+		
+	}
+	this.getActiveSetIndexFromCellId = function(id)
+	{
+		for(var i = 0; i < this.activeSet.length; i++){
+			if(this.activeSet[i] == id)
+			{
+				return i;
+			}
+		}
+		return -1;
+	}
 }
 // SCALING OPTIONS
 // scaling can have values as follows with full being the default
@@ -156,9 +209,20 @@ frame.on("ready", function() {
 		 guiAddUe(ue_2, stage);
 		 
 		 
-		 ueGuiContainer.on("pressup", function(e){
-			getUeById(e.target.name).setStartCell(cellArray);
-		 });
+		ueGuiContainer.on("pressup", function(e){
+		 
+			if(!getUeById(e.target.name).psconnection && !getUeById(e.target.name).csconnection){
+				getUeById(e.target.name).setStartCell(cellArray);
+			}
+		});
+		
+		interval(1000, function(){
+			for(var i = 0; i < ueArray.length; i++){
+				if(ueArray[i].csconnection || ueArray[i].psconnection){
+					ueArray[i].updateActiveSet(cellArray);
+				}
+			}
+		})
 		 
 		button.on("click", function()
 		{
@@ -233,7 +297,7 @@ function guiAddUe(ue, stage){
 	ue.gui.drag({currentTarget:true});
 	
 	ue.gui.setBounds(0,0);
-	//ue.gui.outline();
+	ue.setStartCell(cellArray);
 }
 
 function submitCommand(commandInput, commandHistoryArray, commandHistoryLabels){
@@ -294,7 +358,37 @@ function checkCommand(command){
 	}
 	else if(commandItems[0] == "ue")
 	{
-		//setup ue
+		if(getUeById(commandItems[1]) != undefined)
+		{
+			if(commandItems[2] == 'start_ps')
+			{
+					getUeById(commandItems[1]).psconnection = true;
+					getUeById(commandItems[1]).updateActiveSet(cellArray);
+					return 'EXECUTED';
+			}
+			else if(commandItems[2] == 'stop_ps')
+			{
+					getUeById(commandItems[1]).psconnection = false;
+					zog(getUeById(commandItems[1]).getInfo());
+					return 'EXECUTED';
+			}
+			if(commandItems[2] == 'start_cs')
+			{
+					getUeById(commandItems[1]).csconnection = true;
+					getUeById(commandItems[1]).updateActiveSet(cellArray);
+					return 'EXECUTED';
+			}
+			else if(commandItems[2] == 'stop_cs')
+			{
+					getUeById(commandItems[1]).csconnection = false;
+					zog(getUeById(commandItems[1]).getInfo());
+					return 'EXECUTED';
+			}
+			
+			
+			return 'unknown ue parameter';
+		}
+		return 'ue with id: ' + commandItems[1] + ' does not exist';
 	}
 	
 	return 'unknown command';
