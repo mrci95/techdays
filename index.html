@@ -56,6 +56,27 @@ function UE(id, startPosX, startPosY){
 		return undefined;
 	}
 	this.activeSet = new Array();
+	
+	this.startPsConnection = function(){
+		this.psconnection = true;
+		this.updateActiveSet(cellArray);
+	}
+	
+	this.stopPsConnection = function(){
+		this.psconnection = false;
+		this.updateActiveSet(cellArray);
+	}
+	
+	this.startCsConnection = function(){
+		this.csconnection = true;
+		this.updateActiveSet(cellArray);
+	}
+	
+	this.stopCsConnection = function(){
+		this.csconnection = false;
+		this.updateActiveSet(cellArray);
+	}
+	
 	this.getInfo = function()
 	{
 		return 'UE(id: ' + this.id + ', startCell: ' + this.startCell + ', activeSet = [' + this.activeSet.toString() + ']' + ', connection: ' +  this.connectionInfo() + ')';
@@ -86,27 +107,31 @@ function UE(id, startPosX, startPosY){
 	{
 		var noOfCells = cells.length;
 		
-		for(var i = 0; i<noOfCells; i++)
-		{
-			var c = dist(cells[i].gui.x, cells[i].gui.y,this.gui.x,this.gui.y);
-			
-			var index = this.getActiveSetIndexFromCellId(cells[i].id);
-			
-			//zog('cell_id: ' + cells[i].id + ', ASindex: ' + index + ', distance: ' + c);
-			
-			if(c < 300 && index == -1 )
+		if(this.psconnection || this.csconnection){
+			for(var i = 0; i<noOfCells; i++)
 			{
-				//zog('add cell ' + cells[i].id + ' to AS'); 
-				this.activeSet.push(cells[i].id);
-			}
-			else if (c > 300 && index != -1)
-			{
-				//zog('remove cell ' + cells[i].id + 'from AS'); 
-				this.activeSet.splice(index,1);
+				var c = dist(cells[i].gui.x, cells[i].gui.y,this.gui.x,this.gui.y);
+				
+				var index = this.getActiveSetIndexFromCellId(cells[i].id);
+				
+				//zog('cell_id: ' + cells[i].id + ', ASindex: ' + index + ', distance: ' + c);
+				
+				if(c < 300 && index == -1 )
+				{
+					//zog('add cell ' + cells[i].id + ' to AS'); 
+					this.activeSet.push(cells[i].id);
+				}
+				else if (c > 300 && index != -1)
+				{
+					//zog('remove cell ' + cells[i].id + 'from AS'); 
+					this.activeSet.splice(index,1);
+				}
 			}
 		}
+		else{
+			this.activeSet = [];
+		}
 		zog(this.getInfo());
-		
 	}
 	this.getActiveSetIndexFromCellId = function(id)
 	{
@@ -362,26 +387,22 @@ function checkCommand(command){
 		{
 			if(commandItems[2] == 'start_ps')
 			{
-					getUeById(commandItems[1]).psconnection = true;
-					getUeById(commandItems[1]).updateActiveSet(cellArray);
+					getUeById(commandItems[1]).startPsConnection()
 					return 'EXECUTED';
 			}
 			else if(commandItems[2] == 'stop_ps')
 			{
-					getUeById(commandItems[1]).psconnection = false;
-					zog(getUeById(commandItems[1]).getInfo());
+					getUeById(commandItems[1]).stopPsConnection()
 					return 'EXECUTED';
 			}
 			if(commandItems[2] == 'start_cs')
 			{
-					getUeById(commandItems[1]).csconnection = true;
-					getUeById(commandItems[1]).updateActiveSet(cellArray);
+					getUeById(commandItems[1]).startCsConnection()
 					return 'EXECUTED';
 			}
 			else if(commandItems[2] == 'stop_cs')
 			{
-					getUeById(commandItems[1]).csconnection = false;
-					zog(getUeById(commandItems[1]).getInfo());
+					getUeById(commandItems[1]).stopCsConnection()
 					return 'EXECUTED';
 			}
 			
