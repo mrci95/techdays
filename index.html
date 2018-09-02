@@ -21,9 +21,17 @@ var cellArray = new Array();
 var ueGuiContainer = new Container();
 var ueArray = new Array();
 
+const connectionType = {
+    EULHS: 'int_eul_hs',
+    SPEECH: 'speech_12_2',
+    SPEECHEULHS: 'int_eul_hs_speech_12_2',
+}
+
+
 function Cell(id, resources, startPosX, startPosY) {
   this.id = id;
-  this.resources = resources;
+  this.psresources = resources;
+  this.csresources = resources;
   this.startPosX = startPosX;
   this.startPosY = startPosY;
   
@@ -31,6 +39,30 @@ function Cell(id, resources, startPosX, startPosY) {
   {
 	return 'cell_id: ' + this.id + ', resources: ' + this.resources; 
   };
+  
+  this.admissionReq = function(connType){
+  
+	switch(connType)
+	{
+		case connectionType.EULHS:
+			if(this.psresources > 0){
+				return true;
+			}else{
+				zog("admission reject cell: " + this.id);
+				return false;
+			}
+		break;
+		case connectionType.SPEECH:
+			if(this.csresources > 0){
+				return true;
+			}else{
+				zog("admission reject cell: " + this.id);
+				return false;
+			}
+		break;
+		default:
+	}
+  }
 }
 
 function UE(id, startPosX, startPosY){
@@ -58,17 +90,64 @@ function UE(id, startPosX, startPosY){
 	this.activeSet = new Array();
 	
 	this.startPsConnection = function(){
-		this.psconnection = true;
+		
+		if(this.csconnection == true)
+		{
+			for(var i = 0; i < this.activeSet.length; i++)
+			{
+				if(!getCellById(this.activeSet[i]).admissionReq(connectionType.EULHS)){
+					return;
+				}
+			}
+			
+			for(var i = 0; i < this.activeSet.length; i++)
+			{
+				getCellById(this.activeSet[i]).psresources--;
+			}
+			
+			this.psconnection = true;
+		}
+		else
+		{
+			if(!getCellById(this.startCell).admissionReq(connectionType.EULHS)){
+					return;
+			}
+			getCellById(this.startCell).psresources--;
+			this.psconnection = true;
+		}
 		this.updateActiveSet(cellArray);
 	}
 	
 	this.stopPsConnection = function(){
+	
 		this.psconnection = false;
 		this.updateActiveSet(cellArray);
 	}
 	
 	this.startCsConnection = function(){
-		this.csconnection = true;
+		if(this.psconnection == true)
+		{
+			for(var i = 0; i < this.activeSet.length; i++)
+			{
+				if(!getCellById(this.activeSet[i]).admissionReq(connectionType.SPEECH)){
+					return;
+				}
+			}
+			
+			for(var i = 0; i < this.activeSet.length; i++)
+			{
+				getCellById(this.activeSet[i]).csresources--;
+			}
+			this.csconnection = true;
+		}
+		else
+		{
+			if(!getCellById(this.startCell).admissionReq(connectionType.SPEECH)){
+					return;
+			}
+			getCellById(this.startCell).csresources--;
+			this.csconnection = true;
+		}
 		this.updateActiveSet(cellArray);
 	}
 	
@@ -126,6 +205,11 @@ function UE(id, startPosX, startPosY){
 					//zog('remove cell ' + cells[i].id + 'from AS'); 
 					this.activeSet.splice(index,1);
 				}
+			}
+			
+			if(isEmpty(this.activeSet)){
+				this.psconnection = false;
+				this.csconnection = false;
 			}
 		}
 		else{
@@ -369,14 +453,24 @@ function checkCommand(command){
 		//setup cell
 		if(getCellById(commandItems[1]) != undefined)
 		{
-			if(commandItems[2] == 'resources')
+			if(commandItems[2] == 'psresources')
 			{
 				if (!isNaN(parseInt(commandItems[3], 10))) {
-					getCellById(commandItems[1]).resources = parseInt(commandItems[3], 10);
+					getCellById(commandItems[1]).psresources = parseInt(commandItems[3], 10);
 					return 'EXECUTED';
 				} 
 				return 'resource value is not a number';
 			}
+			
+			if(commandItems[2] == 'csresources')
+			{
+				if (!isNaN(parseInt(commandItems[3], 10))) {
+					getCellById(commandItems[1]).csresources = parseInt(commandItems[3], 10);
+					return 'EXECUTED';
+				} 
+				return 'resource value is not a number';
+			}
+			
 			return 'unknown cell parameter';
 		}
 		return 'cell with id: ' + commandItems[1] + ' does not exist';
