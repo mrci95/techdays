@@ -13,8 +13,41 @@
 <script src="js/zim_7.3.2.js"></script>
 <!-- use zimjs.com/distill for minified individual functions! -->
 
+<style>
+
+	body {background-color:#ddd;}
+	article {font-size:14px; font-family:verdana; padding:20px;  margin:20px; color:#555; position:relative; width:60%; border:thin solid #888;}
+
+	#holder {position:relative; margin:0px 0px;}
+	/*
+	zim Frame makes a canvas tag and adds it to the div called holder
+	the id of canvas tag is holderCanvas (Frame adds the word Canvas to the holder id)
+	here we are using CSS to scale the canvas but the stage dimensions stay fixed to the values provided to Frame
+	*/
+	#holderCanvas {width:100%;}
+	
+	.sidebar{
+	  border-top-left-radius: 25px;
+	  border-bottom-left-radius: 25px;
+      padding: 20px 15px;
+      background:  #fff;
+	  height: 100vh;
+	  overflow: auto;
+      border-right: 1px solid #C7B4A6;
+    }
+	
+	#mainbar{
+		position: relative;
+		height: 100vh;
+		overflow: auto;
+		background-color: gray;
+    }
+
+</style>
+
 <script>
 
+var frame;
 var ERICSSON_BLUE = "#032564"
 var WHITE = "#D2D2D2"
 var cellArray = new Array();
@@ -228,123 +261,131 @@ function UE(id, startPosX, startPosY){
 		return -1;
 	}
 }
-// SCALING OPTIONS
-// scaling can have values as follows with full being the default
-// "fit"	sets canvas and stage to dimensions and scales to fit inside window size
-// "outside"	sets canvas and stage to dimensions and scales to fit outside window size
-// "full"	sets stage to window size with no scaling
-// "tagID"	add canvas to HTML tag of ID - set to dimensions if provided - no scaling
 
-var scaling = "fit"; // this will resize to fit inside the screen dimensions
-var width = 1920;
-var height = 1080;
-var color = ERICSSON_BLUE; // ZIM colors like green, blue, pink, faint, clear, etc. available globally
-var outerColor = dark; // any HTML colors like "violet", "#333", etc. fine to use
 
-var frame = new Frame(scaling, width, height, color, outerColor);
+	// SCALING OPTIONS
+	// scaling can have values as follows with full being the default
+	// "fit"	sets canvas and stage to dimensions and scales to fit inside window size
+	// "outside"	sets canvas and stage to dimensions and scales to fit outside window size
+	// "full"	sets stage to window size with no scaling
+	// "tagID"	add canvas to HTML tag of ID - set to dimensions if provided - no scaling
 
-frame.on("ready", function() {
-    zog("ready from ZIM Frame"); // logs in console (F12 - choose console)
+	var scaling = "holder"; // this will resize to fit inside the screen dimensions
+	var width = 1280;
+	var height = 1060;
+	var color = ERICSSON_BLUE; // ZIM colors like green, blue, pink, faint, clear, etc. available globally
+	var outerColor = dark; // any HTML colors like "violet", "#333", etc. fine to use
 
-    var stage = frame.stage;
-    var stageW = frame.width;
-    var stageH = frame.height;
+	frame = new Frame(scaling,width,height,ERICSSON_BLUE,ERICSSON_BLUE);
 
-	ueGuiContainer.addTo(stage);
-	ueGuiContainer.pos(0,0);
-    // see http://zimjs.com/learn.html for video and code tutorials
-    // see http://zimjs.com/docs.html for documentation
-    // see http://zimjs.com/bits.html for 64 Interactive Media techniques
+	frame.on("ready", function() {
+		zog("ready from ZIM Frame"); // logs in console (F12 - choose console)
 
-    // put your code here (you can delete this sample code)
-	
-	frame.loadAssets(["ue.png"], "assets/");
-	 
-	var console = new Container()
-		.addTo(stage)
-		.pos(1500, 1000);
+		zog(frame.canvasID);
 		
-	var commandInput = new TextArea({color:"#AAA", height:30, size:15, placeholder:"enter command"})
-		.center(console);
-	
-	var buttonLabel = new Label({
-	   text:"Enter",
-	   size:20,
-	   color:"white",
-	});
-	
-	var button = new Button({
-	   label:buttonLabel,
-	   width:100,
-	   height:30,
-	   color:"gray",
-	   rollColor: "orange",
-	   corner:0
-	})
-	.addTo(console)
-	.pos(250, 0);
-		
-	var commandHistoryLabels = new Container()
-		.addTo(console)
-		.pos(10, -30);
-		
-	var commandHistoryArray = new Array();
-	var commandHistoryBackground = new Rectangle(350, 920, "white")
-		.addTo(console)
-		.pos(0,-930);
-		
-	commandHistoryBackground.alpha = 0.2;
+		var stage = frame.stage;
+		var stageW = frame.width;
+		var stageH = frame.height;
 
-	frame.on("complete", function() {
+		ueGuiContainer.addTo(stage);
+		ueGuiContainer.pos(0,0);
+		// see http://zimjs.com/learn.html for video and code tutorials
+		// see http://zimjs.com/docs.html for documentation
+		// see http://zimjs.com/bits.html for 64 Interactive Media techniques
+
+		// put your code here (you can delete this sample code)
 		
-		 var cell_1 = new Cell(1,10,391,361);//cellId, resources, posX, posY
-		 cellArray.push(cell_1);
-		 guiAddCell(cell_1, stage);
+		frame.loadAssets(["ue.png"], "assets/");
 		 
-		 var cell_2 = new Cell(2,10,813,436);
-		 cellArray.push(cell_2);
-		 guiAddCell(cell_2, stage);
-		 
-		 var cell_3 = new Cell(3,10,547,772);
-		 cellArray.push(cell_3);
-		 guiAddCell(cell_3, stage);
-		 
-		 var ue_1 = new UE(1, 500, 500);
-		 ueArray.push(ue_1);
-		 guiAddUe(ue_1, stage);
-		 
-		 var ue_2 = new UE(2, 700, 500);
-		 ueArray.push(ue_2);
-		 guiAddUe(ue_2, stage);
-		 
-		 
-		ueGuiContainer.on("pressup", function(e){
-		 
-			if(!getUeById(e.target.name).psconnection && !getUeById(e.target.name).csconnection){
-				getUeById(e.target.name).setStartCell(cellArray);
-			}
+		/*var console = new Container()
+			.addTo(stage)
+			.pos(1500, 1000);
+			
+		var commandInput = new TextArea({color:"#AAA", height:30, size:15, placeholder:"enter command"})
+			.center(console);
+		
+		var buttonLabel = new Label({
+		   text:"Enter",
+		   size:20,
+		   color:"white",
 		});
 		
-		interval(1000, function(){
-			for(var i = 0; i < ueArray.length; i++){
-				if(ueArray[i].csconnection || ueArray[i].psconnection){
-					ueArray[i].updateActiveSet(cellArray);
-				}
-			}
+		var button = new Button({
+		   label:buttonLabel,
+		   width:100,
+		   height:30,
+		   color:"gray",
+		   rollColor: "orange",
+		   corner:0
 		})
-		 
-		button.on("click", function()
-		{
-			submitCommand(commandInput,commandHistoryArray,commandHistoryLabels );
-		});
-		 
-		stage.update(); // this is needed to show any changes
-	}); //end of complete 
-	
-	stage.update();
+		.addTo(console)
+		.pos(250, 0);
+			
+		var commandHistoryLabels = new Container()
+			.addTo(console)
+			.pos(10, -30);
+			
+		var commandHistoryArray = new Array();
+		var commandHistoryBackground = new Rectangle(350, 920, "white")
+			.addTo(console)
+			.pos(0,-930);
+			
+		commandHistoryBackground.alpha = 0.2;*/
 
-	
-}); // end of ready
+		frame.on("complete", function() {
+			
+			 var cell_1 = new Cell(1,10,391,321);//cellId, resources, posX, posY
+			 cellArray.push(cell_1);
+			 guiAddCell(cell_1, stage);
+			 
+			 var cell_2 = new Cell(2,10,813,406);
+			 cellArray.push(cell_2);
+			 guiAddCell(cell_2, stage);
+			 
+			 var cell_3 = new Cell(3,10,547,742);
+			 cellArray.push(cell_3);
+			 guiAddCell(cell_3, stage);
+			 
+			 var ue_1 = new UE(1, 500, 500);
+			 ueArray.push(ue_1);
+			 guiAddUe(ue_1, stage);
+			 
+			 var ue_2 = new UE(2, 700, 500);
+			 ueArray.push(ue_2);
+			 guiAddUe(ue_2, stage);
+			 
+			 var ue_3 = new UE(3, 900, 500);
+			 ueArray.push(ue_3);
+			 guiAddUe(ue_3, stage);
+			 
+			 
+			ueGuiContainer.on("pressup", function(e){
+			 
+				if(!getUeById(e.target.name).psconnection && !getUeById(e.target.name).csconnection){
+					getUeById(e.target.name).setStartCell(cellArray);
+				}
+			});
+			
+			interval(1000, function(){
+				for(var i = 0; i < ueArray.length; i++){
+					if(ueArray[i].csconnection || ueArray[i].psconnection){
+						ueArray[i].updateActiveSet(cellArray);
+					}
+				}
+			})
+			 
+			/*button.on("click", function()
+			{
+				submitCommand(commandInput,commandHistoryArray,commandHistoryLabels );
+			});*/
+			 
+			stage.update(); // this is needed to show any changes
+		}); //end of complete 
+		
+		stage.update();
+
+		
+	}); // end of ready
 
 
 function guiAddCell(cell, stage){
@@ -532,13 +573,138 @@ function getUeById(id){
 	}
 	return undefined;
 }
+
+function getCellSettings(id){
+	var cell = getCellById(id);
+	var cellSettingHeader = 'Cell_' + cell.id + ' settings'; 
+	document.getElementById('cellSettingTitleId').innerHTML = cellSettingHeader;
+	document.getElementById('cellidSetting').value =  cell.id;
+	
+	var psresourcesSetting = cell.psresources;
+	var csresourcesSetting = cell.csresources;
+	
+	document.getElementById('psresourcesSettingId').value = psresourcesSetting;
+	document.getElementById('csresourcesSettingId').value = csresourcesSetting;
+}
+
+function setCellSettings(id){
+	var cell = getCellById(id);
+	cell.psresources = document.getElementById('psresourcesSettingId').value
+	cell.csresources = document.getElementById('csresourcesSettingId').value
+}
+
+function getUesListForDropDown(){
+	var html = '';
+				  //<li type="button" data-toggle="modal" data-target="#cellSettingModal"><a href="#">Cell 1</a></li>
+	for(var i = 0; i<ueArray.length; i++){
+		var htmlPerUe = '<li type="button" data-toggle="modal" data-target="#ueSettingModal"><a href="#">UE ' + ueArray[i].id + '</a></li>';
+		html = html + htmlPerUe;
+	}
+	
+	document.getElementById('uesDropdownList').innerHTML = html;
+	
+}
 </script>
 
-<meta name="viewport" content="width=device-width, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 
 </head>
 
 <body>
-<!-- canvas with id="myCanvas" is made by zim Frame -->
+<div class="container-fluid">
+	<div class="row">
+		<div class="col-lg-8">
+			<div class="row">
+				<section id="holder"></section>
+			</div>
+		</div>
+		<div class="col-lg-2 sidebar">ue varius velit quis mi scelerisque lacinia. Maecenas condimentum lectus vel hendrerit fermentum. Maecenas id condimentum dolor, eget accumsan nunc. Mauris vitae congue risus. Etiam vel leo tincidunt metus molestie auctor. Phasellus suscipit odio sit amet mollis faucibus. In viverra ipsum non erat suscipit mollis. Morbi vehicula, nisl non faucibus rutrum, urna nunc pellentesque purus, vel pellentesque neque metus nec nunc.
+		</div>
+		<div id="mainbar" class="col-lg-2 mainbar">
+			
+			<div class="dropdown">
+				<button class="btn btn-default btn-block dropdown-toggle" type="button" data-toggle="dropdown">Setup cells
+				<span class="caret"></span></button>
+				<ul class="dropdown-menu btn-block dropdown-menu-left">
+				  <li  onclick="getCellSettings(1)" type="button" data-toggle="modal" data-target="#cellSettingModal"><a href="#">Cell 1</a></li>
+				  <li  onclick="getCellSettings(2)" type="button" data-toggle="modal" data-target="#cellSettingModal"><a href="#">Cell 2</a></li>
+				  <li  onclick="getCellSettings(3)" type="button" data-toggle="modal" data-target="#cellSettingModal"><a href="#">Cell 3</a></li>
+				</ul>
+			</div>
+			
+			<div class="dropdown">
+				<button onclick="getUesListForDropDown()" class="btn btn-default btn-block dropdown-toggle" type="button" data-toggle="dropdown">Setup UEs
+				<span class="caret"></span></button>
+				<ul id="uesDropdownList" class="dropdown-menu btn-block dropdown-menu-left">
+				</ul>
+			</div>
+		</div>
+
+	</div>
+	
+	<div id="cellSettingModal" class="modal fade" role="dialog">
+	  <div class="modal-dialog">
+
+		<!-- Modal content-->
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal">&times;</button>
+			<h4 id="cellSettingTitleId" class="modal-title">Modal Header</h4>
+		  </div>
+		  <div class="modal-body">
+		  	<div class="row">
+				<div class="col-sm-4">Cell id</div>
+				<div class="col-sm-4">
+					<input type="input" class="form-control" id="cellidSetting" disabled>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-sm-4">PS resources</div>
+				<div class="col-sm-4">
+					<input type="input" class="form-control" id="psresourcesSettingId">
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-sm-4">CS resources</div>
+				<div class="col-sm-4">
+					<input type="input" class="form-control" id="csresourcesSettingId">
+				</div>
+			</div>
+		  </div>
+		  <div class="modal-footer">
+			<button onclick="setCellSettings(getElementById('cellidSetting').value)" type="button" class="btn btn-success" data-dismiss="modal">Save</button>
+			<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+		  </div>
+		</div>
+
+	  </div>
+	</div>
+	
+    <div id="ueSettingModal" class="modal fade" role="dialog">
+	  <div class="modal-dialog">
+
+		<!-- Modal content-->
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal">&times;</button>
+			<h4 id="cellSettingTitleId" class="modal-title">Modal Header</h4>
+		  </div>
+		  <div class="modal-body">
+		  </div>
+		  <div class="modal-footer">
+			<button onclick="setCellSettings(getElementById('cellidSetting').value)" type="button" class="btn btn-success" data-dismiss="modal">Save</button>
+			<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+		  </div>
+		</div>
+
+	  </div>
+	</div>
+</div>
+
+
+
 </body>
 </html>
