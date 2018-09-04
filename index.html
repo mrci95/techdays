@@ -121,10 +121,10 @@ var ueGuiContainer = new Container();
 var ueArray = new Array();
 
 //sidebar variables
-function sidebarElement(elamentName, elementId, isLocked){
-	this.elamentName = elamentName;
-	this.elementId = elementId;
-	this.isLocked = isLocked;
+function sidebarElement(elamentKurwaName, elementIdKurwa, isLockedKurwa){
+	this.elamentName = elamentKurwaName;
+	this.elementId = elementIdKurwa;
+	this.isLocked = isLockedKurwa;
 } 
 var sidebarElements = new Array();
 
@@ -649,14 +649,33 @@ function getUeById(id){
 }
 
 function getCellSettings(id){
-
-	//add cell to sidebarElement
-	var element = new sidebarElement("Cell",id,false); //elamentName,elementId,isLocked
 	
 	//remove all not locked elements
+	var isInElements = false;
+	var element = ["Cell", id, false];
+	
+	for(var i = 0; i < sidebarElements.length; i++){
+		if(sidebarElements[i][0] == element[0] && sidebarElements[i][1] == element[1] && sidebarElements[i][2] == true){
+			zog("alredy on list");
+			isInElements = true;
+		}
+	}
+	
 	var i = 0;
-	sidebarElements.push(element);
-	zog(sidebarElements);
+	while (i < sidebarElements.length) {
+		if(sidebarElements[i][2]){	
+			i++;
+		}else{
+			sidebarElements.splice(i,1);
+		}
+	}
+	
+	if(!isInElements){
+		sidebarElements.push(element);
+	}
+	
+	
+	refreshSidebar();
 }
 
 function setCellSettings(id){
@@ -676,39 +695,136 @@ function getUesListForDropDown(){
 }
 
 function getUeSettings(id){
-	document.getElementById('sidebar').innerHTML = "UE_" + id;
+		//remove all not locked elements
+	var isInElements = false;
+	var element = ["UE", id, false];
+	
+	for(var i = 0; i < sidebarElements.length; i++){
+		if(sidebarElements[i][0] == element[0] && sidebarElements[i][1] == element[1] && sidebarElements[i][2] == true){
+			isInElements = true;
+		}
+	}
+	
+	var i = 0;
+	while (i < sidebarElements.length) {
+		if(sidebarElements[i][2]){	
+			i++;
+		}else{
+			sidebarElements.splice(i,1);
+		}
+	}
+	
+	if(!isInElements){
+		sidebarElements.push(element);
+	}
+	
+	refreshSidebar();
 }
 
 function lockPanel(panelType, id){
 	
+	var glyphicon = '';
+	
 	for(var i = 0; i < sidebarElements.length; i++){
-		if(sidebarElements[i].elamentName == panelType && sidebarElements[i].elementId == id){
-			sidebarElements[i].isLocked = !sidebarElements[i].isLocked;
+		if(sidebarElements[i][0] == panelType && sidebarElements[i][1] == id){
+			sidebarElements[i][2] = !sidebarElements[i][2];
+			if(sidebarElements[i][2]){
+				glyphicon = 'glyphicon glyphicon-eye-open';
+			}else{
+				glyphicon = 'glyphicon glyphicon-eye-close';
+			}
 		}
 	}
-	zog(sidebarElements);
+	var elementId = panelType + "_" + id + "_lockSpan";
+	
+	document.getElementById(elementId).className = glyphicon;
 }
 
 function getActiveSettingsHtml(){
-	if(activeSettingArray.length == 0){
+	if(sidebarElements.length == 0){
 		return;
 	}
 	
 	var finalInnerHtml = '';
 	
-	for(var i = 0; i < activeSettingArray.length ; i++){
-		if(activeSettingArray[0] == 'Cell'){
-			finalInnerHtml = finalInnerHtml + prepareCellSettingsPanel(activeSettingArray[1]);
+	for(var i = 0; i < sidebarElements.length ; i++){
+		if(sidebarElements[i][0] == "Cell"){
+			finalInnerHtml = finalInnerHtml + prepareCellSettingsPanel(sidebarElements[i][1]);
 		}else{
-			//finalInnerHtml = finalInnerHtml + prepareUeSettingsPanel(activeSettingArray[1]);
+			zog("getActiveSettingsHtml UE case");
+			finalInnerHtml = finalInnerHtml + prepareUeSettingsPanel(sidebarElements[i][1]);
 		}
 	}
 	
+	return finalInnerHtml;
 	
 }
 
 function prepareCellSettingsPanel(id){
-	
+
+ var finalInnerHtml ='';
+ 
+ var part1 = '<div class="panel panel-default"><div class="panel-heading"><b>Cell';
+ var part2 = '</b><span id="Cell_';
+ var part3 = '_lockSpan" onclick = ';
+ var part4 = '"lockPanel(';
+ var part5 = "'Cell' ,"; 
+ var part6 = ')" class="'
+ var glyphicon = 'glyphicon glyphicon-eye-close';
+  
+ for(var i = 0; i < sidebarElements.length; i++){
+	if(sidebarElements[i][0] == "Cell" && sidebarElements[i][1] == id){
+		if(sidebarElements[i][2]){
+			glyphicon = 'glyphicon glyphicon-eye-open';
+		}
+	}
+ }
+
+ var part7 = '"></span></div><div class="panel-body"><div class="panel panel-default"><div class="panel-heading">Cell info</div><div class="panel-body"><div class="row setting"><div class="col-lg-8">Cell ID</div><div class="col-lg-4">';
+ var part8 = '</div></div><div class="row setting"><div class="col-lg-8">EULHS users count</div><div class="col-lg-4">';
+ var part9 = '</div></div><div class="row setting"><div class="col-lg-8">Speech users count</div><div class="col-lg-4">';
+ var part10 = '</div></div></div></div><div class="panel panel-default"><div class="panel-heading">Cell settings</div><div class="panel-body"><div class="row setting"><div class="col-lg-8">hsAdmUsers</div><div class="col-lg-4"><input type="text" class="form-control" id="cell_';
+ var part11 = '_hsAdmUsersValue"></div></div><div class="row setting"><div class="col-lg-8">speechAdmUsers</div><div class="col-lg-4"><input type="text" class="form-control" id="cell_';
+ var part12 = '_speechAdmUsersValue"></div></div><div class="row setting"><div class="col-lg-12"><button onclick="setCellSettings(';
+ var part13 = ')" class="btn btn-primary btn-block" type="button" >Save settings<span class="glyphicon glyphicon-save"></span></button></div></div></div></div></div></div>';
+ 
+ finalInnerHtml = part1 + id + part2 + id + part3 + part4 + part5 + id + part6 + glyphicon + part7 + id + part8 + getCellById(id).eulHsUsersCount + part9 + getCellById(id).speechUsersCount + part10 + id + part11 + id + part12 + id + part13;
+ 
+ return finalInnerHtml;
+}
+
+function prepareUeSettingsPanel(id){
+ var finalInnerHtml ='';
+ 
+ var part1 = '<div class="panel panel-default"><div class="panel-heading"><b>UE';
+ var part2 = '</b><span id="UE_';
+ var part3 = '_lockSpan" onclick = ';
+ var part4 = '"lockPanel(';
+ var part5 = "'UE' ,"; 
+ var part6 = ')" class="'
+ var glyphicon = 'glyphicon glyphicon-eye-close';
+  
+ for(var i = 0; i < sidebarElements.length; i++){
+	if(sidebarElements[i][0] == "UE" && sidebarElements[i][1] == id){
+		if(sidebarElements[i][2]){
+			glyphicon = 'glyphicon glyphicon-eye-open';
+		}
+	}
+ }
+ 
+ var part7 = '"></span></div><div class="panel-body"></div></div>';
+ 
+ finalInnerHtml = part1 + id + part2 + id + part3 + part4 + part5 + id + part6 + glyphicon + part7
+ 
+ return finalInnerHtml;
+ 
+}
+
+
+
+function refreshSidebar(){
+
+	document.getElementById('sidebar').innerHTML = getActiveSettingsHtml();
 }
 </script>
 
@@ -729,68 +845,6 @@ function prepareCellSettingsPanel(id){
 		</div>
 		
 		<div id="sidebar" class="col-lg-2 sidebar">
-			<div class="panel panel-default">
-				<div class="panel-heading">
-					<b id="Cell_1_PanelName" >Cell</b><b id="Cell_1_PanelId" >1</b><span id="Cell_1_lockSpan" onclick="lockPanel(getElementById('Cell_1_PanelName').innerHTML , getElementById('Cell_1_PanelId').innerHTML)" class="glyphicon glyphicon-eye-close"></span>
-				</div>
-				<div class="panel-body">
-					<div class="panel panel-default">
-					  <div class="panel-heading">Cell info</div>
-					  <div class="panel-body">
-						<div class="row setting">
-							<div class="col-lg-8">
-								Cell ID
-							</div>
-							<div id="cell_1_IdSettingValue" class="col-lg-4">
-								1
-							</div>
-						</div>
-						<div class="row setting">
-							<div class="col-lg-8">
-								EULHS users count
-							</div>
-							<div id="cell_1_eulHsUsersCountSettingValue" class="col-lg-4">
-								0
-							</div>
-						</div>
-						<div class="row setting">
-							<div class="col-lg-8">
-								Speech users count
-							</div>
-							<div id="cell_1_speechUsersCountSettingValue" class="col-lg-4">
-								0
-							</div>
-						</div>
-					  </div>
-					</div>
-					<div class="panel panel-default">
-					  <div class="panel-heading">Cell settings</div>
-						<div class="panel-body">
-							<div class="row setting">
-								<div class="col-lg-8">
-									hsAdmUsers
-								</div>
-								<div class="col-lg-4">
-									<input type="text" class="form-control" id="cell_1_hsAdmUsersValue">
-								</div>
-							</div>
-							<div class="row setting">
-								<div class="col-lg-8">
-									speechAdmUsers
-								</div>
-								<div class="col-lg-4">
-									<input type="text" class="form-control" id="cell_1_speechAdmUsersValue">
-								</div>
-							</div>
-							<div class="row setting">
-								<div class="col-lg-12">
-									<button onclick="setCellSettings(1)" class="btn btn-primary btn-block" type="button" >Save settings<span class="glyphicon glyphicon-save"></span></button>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
 		</div>
 		
 		<div id="mainbar" class="col-lg-2 mainbar">
