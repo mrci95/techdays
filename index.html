@@ -27,8 +27,6 @@
 	#holderCanvas {width:100%;}
 	
 	.sidebar{
-	  border-top-left-radius: 25px;
-	  border-bottom-left-radius: 25px;
       padding: 20px 15px;
       background:  #fff;
 	  height: 100vh;
@@ -37,11 +35,79 @@
     }
 	
 	#mainbar{
+		padding: 0px;
 		position: relative;
 		height: 100vh;
 		overflow: auto;
 		background-color: gray;
     }
+	
+	span{
+	padding-left: 15px;
+	}
+
+.btn-mainbar-1 {
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #424242), color-stop(1, #4d4d4d));
+	background:-moz-linear-gradient(top, #424242 5%, #4d4d4d 100%);
+	background:-webkit-linear-gradient(top, #424242 5%, #4d4d4d 100%);
+	background:-o-linear-gradient(top, #424242 5%, #4d4d4d 100%);
+	background:-ms-linear-gradient(top, #424242 5%, #4d4d4d 100%);
+	background:linear-gradient(to bottom, #424242 5%, #4d4d4d 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#424242', endColorstr='#4d4d4d',GradientType=0);
+	background-color:#424242;
+	display:inline-block;
+	cursor:pointer;
+	color:#ffffff;
+	border: 0px;
+	font-family:Arial;
+	font-size:14px;
+	font-weight:bold;
+	padding:10px 30px;
+	text-decoration:none;
+}
+.btn-mainbar-1:hover {
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #4d4d4d), color-stop(1, #424242));
+	background:-moz-linear-gradient(top, #4d4d4d 5%, #424242 100%);
+	background:-webkit-linear-gradient(top, #4d4d4d 5%, #424242 100%);
+	background:-o-linear-gradient(top, #4d4d4d 5%, #424242 100%);
+	background:-ms-linear-gradient(top, #4d4d4d 5%, #424242 100%);
+	background:linear-gradient(to bottom, #4d4d4d 5%, #424242 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#4d4d4d', endColorstr='#424242',GradientType=0);
+	background-color:#4d4d4d;
+}
+.btn-mainbar-1:active {
+	position:relative;
+	top:1px;
+}
+
+.btn-mainbar-2 {
+	background-color:#ffffff;
+	display:inline-block;
+	cursor:pointer;
+	color:#000000;
+	font-family:Arial;
+	font-size:15px;
+	font-weight:bold;
+	padding:10px 23px;
+	border: 0px;
+	text-decoration:none;
+}
+.btn-mainbar-2:hover {
+	background-color:#bababa;
+}
+.btn-mainbar-2:active {
+	position:relative;
+	top:1px;
+}
+
+.setting{
+	margin-bottom: 10px;
+}
+
+#cellIdSettingValue, #eulHsUsersCountSettingValue, #speechUsersCountSettingValue{
+	text-align: right;
+}
+	
 
 </style>
 
@@ -54,6 +120,14 @@ var cellArray = new Array();
 var ueGuiContainer = new Container();
 var ueArray = new Array();
 
+//sidebar variables
+function sidebarElement(elamentName, elementId, isLocked){
+	this.elamentName = elamentName;
+	this.elementId = elementId;
+	this.isLocked = isLocked;
+} 
+var sidebarElements = new Array();
+
 const connectionType = {
     EULHS: 'int_eul_hs',
     SPEECH: 'speech_12_2',
@@ -63,6 +137,10 @@ const connectionType = {
 
 function Cell(id, resources, startPosX, startPosY) {
   this.id = id;
+  this.eulHsUsersCount = 0;
+  this.speechUsersCount = 0;
+  this.hsAdmUsers = resources;
+  this.speechAdmUsers = resources;
   this.psresources = resources;
   this.csresources = resources;
   this.startPosX = startPosX;
@@ -354,10 +432,6 @@ function UE(id, startPosX, startPosY){
 			 ueArray.push(ue_2);
 			 guiAddUe(ue_2, stage);
 			 
-			 var ue_3 = new UE(3, 900, 500);
-			 ueArray.push(ue_3);
-			 guiAddUe(ue_3, stage);
-			 
 			 
 			ueGuiContainer.on("pressup", function(e){
 			 
@@ -575,33 +649,65 @@ function getUeById(id){
 }
 
 function getCellSettings(id){
-	var cell = getCellById(id);
-	var cellSettingHeader = 'Cell_' + cell.id + ' settings'; 
-	document.getElementById('cellSettingTitleId').innerHTML = cellSettingHeader;
-	document.getElementById('cellidSetting').value =  cell.id;
+
+	//add cell to sidebarElement
+	var element = new sidebarElement("Cell",id,false); //elamentName,elementId,isLocked
 	
-	var psresourcesSetting = cell.psresources;
-	var csresourcesSetting = cell.csresources;
-	
-	document.getElementById('psresourcesSettingId').value = psresourcesSetting;
-	document.getElementById('csresourcesSettingId').value = csresourcesSetting;
+	//remove all not locked elements
+	var i = 0;
+	sidebarElements.push(element);
+	zog(sidebarElements);
 }
 
 function setCellSettings(id){
 	var cell = getCellById(id);
-	cell.psresources = document.getElementById('psresourcesSettingId').value
-	cell.csresources = document.getElementById('csresourcesSettingId').value
 }
 
 function getUesListForDropDown(){
 	var html = '';
 				  //<li type="button" data-toggle="modal" data-target="#cellSettingModal"><a href="#">Cell 1</a></li>
 	for(var i = 0; i<ueArray.length; i++){
-		var htmlPerUe = '<li type="button" data-toggle="modal" data-target="#ueSettingModal"><a href="#">UE ' + ueArray[i].id + '</a></li>';
+		var htmlPerUe = '<li onclick="getUeSettings(' + ueArray[i].id + ')" class="btn-mainbar-2 btn-block" type="button" data-toggle="modal" data-target="#ueSettingModal">UE ' + ueArray[i].id + '</li>';
 		html = html + htmlPerUe;
 	}
 	
 	document.getElementById('uesDropdownList').innerHTML = html;
+	
+}
+
+function getUeSettings(id){
+	document.getElementById('sidebar').innerHTML = "UE_" + id;
+}
+
+function lockPanel(panelType, id){
+	
+	for(var i = 0; i < sidebarElements.length; i++){
+		if(sidebarElements[i].elamentName == panelType && sidebarElements[i].elementId == id){
+			sidebarElements[i].isLocked = !sidebarElements[i].isLocked;
+		}
+	}
+	zog(sidebarElements);
+}
+
+function getActiveSettingsHtml(){
+	if(activeSettingArray.length == 0){
+		return;
+	}
+	
+	var finalInnerHtml = '';
+	
+	for(var i = 0; i < activeSettingArray.length ; i++){
+		if(activeSettingArray[0] == 'Cell'){
+			finalInnerHtml = finalInnerHtml + prepareCellSettingsPanel(activeSettingArray[1]);
+		}else{
+			//finalInnerHtml = finalInnerHtml + prepareUeSettingsPanel(activeSettingArray[1]);
+		}
+	}
+	
+	
+}
+
+function prepareCellSettingsPanel(id){
 	
 }
 </script>
@@ -621,86 +727,89 @@ function getUesListForDropDown(){
 				<section id="holder"></section>
 			</div>
 		</div>
-		<div class="col-lg-2 sidebar">ue varius velit quis mi scelerisque lacinia. Maecenas condimentum lectus vel hendrerit fermentum. Maecenas id condimentum dolor, eget accumsan nunc. Mauris vitae congue risus. Etiam vel leo tincidunt metus molestie auctor. Phasellus suscipit odio sit amet mollis faucibus. In viverra ipsum non erat suscipit mollis. Morbi vehicula, nisl non faucibus rutrum, urna nunc pellentesque purus, vel pellentesque neque metus nec nunc.
+		
+		<div id="sidebar" class="col-lg-2 sidebar">
+			<div class="panel panel-default">
+				<div class="panel-heading">
+					<b id="Cell_1_PanelName" >Cell</b><b id="Cell_1_PanelId" >1</b><span id="Cell_1_lockSpan" onclick="lockPanel(getElementById('Cell_1_PanelName').innerHTML , getElementById('Cell_1_PanelId').innerHTML)" class="glyphicon glyphicon-eye-close"></span>
+				</div>
+				<div class="panel-body">
+					<div class="panel panel-default">
+					  <div class="panel-heading">Cell info</div>
+					  <div class="panel-body">
+						<div class="row setting">
+							<div class="col-lg-8">
+								Cell ID
+							</div>
+							<div id="cell_1_IdSettingValue" class="col-lg-4">
+								1
+							</div>
+						</div>
+						<div class="row setting">
+							<div class="col-lg-8">
+								EULHS users count
+							</div>
+							<div id="cell_1_eulHsUsersCountSettingValue" class="col-lg-4">
+								0
+							</div>
+						</div>
+						<div class="row setting">
+							<div class="col-lg-8">
+								Speech users count
+							</div>
+							<div id="cell_1_speechUsersCountSettingValue" class="col-lg-4">
+								0
+							</div>
+						</div>
+					  </div>
+					</div>
+					<div class="panel panel-default">
+					  <div class="panel-heading">Cell settings</div>
+						<div class="panel-body">
+							<div class="row setting">
+								<div class="col-lg-8">
+									hsAdmUsers
+								</div>
+								<div class="col-lg-4">
+									<input type="text" class="form-control" id="cell_1_hsAdmUsersValue">
+								</div>
+							</div>
+							<div class="row setting">
+								<div class="col-lg-8">
+									speechAdmUsers
+								</div>
+								<div class="col-lg-4">
+									<input type="text" class="form-control" id="cell_1_speechAdmUsersValue">
+								</div>
+							</div>
+							<div class="row setting">
+								<div class="col-lg-12">
+									<button onclick="setCellSettings(1)" class="btn btn-primary btn-block" type="button" >Save settings<span class="glyphicon glyphicon-save"></span></button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
+		
 		<div id="mainbar" class="col-lg-2 mainbar">
-			
-			<div class="dropdown">
-				<button class="btn btn-default btn-block dropdown-toggle" type="button" data-toggle="dropdown">Setup cells
-				<span class="caret"></span></button>
-				<ul class="dropdown-menu btn-block dropdown-menu-left">
-				  <li  onclick="getCellSettings(1)" type="button" data-toggle="modal" data-target="#cellSettingModal"><a href="#">Cell 1</a></li>
-				  <li  onclick="getCellSettings(2)" type="button" data-toggle="modal" data-target="#cellSettingModal"><a href="#">Cell 2</a></li>
-				  <li  onclick="getCellSettings(3)" type="button" data-toggle="modal" data-target="#cellSettingModal"><a href="#">Cell 3</a></li>
-				</ul>
-			</div>
-			
-			<div class="dropdown">
-				<button onclick="getUesListForDropDown()" class="btn btn-default btn-block dropdown-toggle" type="button" data-toggle="dropdown">Setup UEs
-				<span class="caret"></span></button>
-				<ul id="uesDropdownList" class="dropdown-menu btn-block dropdown-menu-left">
-				</ul>
-			</div>
+			<ul class="nav nav-pills nav-stacked left-menu">
+				<li>
+				  <button class="btn-mainbar-1 btn-block" type="button" data-target="#item1" data-toggle="collapse" data-parent="#stacked-menu">Cells<span class="glyphicon glyphicon-record"></span></button>
+				  <ul class="nav nav-stacked collapse left-submenu" id="item1">
+					<li onclick="getCellSettings(1)" class="btn-mainbar-2 btn-block">Cell 1</li>
+					<li onclick="getCellSettings(2)" class="btn-mainbar-2 btn-block">Cell 2</li>
+					<li onclick="getCellSettings(3)" class="btn-mainbar-2 btn-block">Cell 3</li>
+				  </ul>
+				</li>
+				<li>
+				  <button onclick="getUesListForDropDown()" class="btn-mainbar-1 btn-block" type="button" data-target="#uesDropdownList" data-toggle="collapse" data-parent="#stacked-menu">UEs<span class="glyphicon glyphicon-phone"></span></span></button>         
+				  <ul id="uesDropdownList" class="nav nav-pills nav-stacked collapse" id="item2">
+				  </ul>
+				</li>
+			</ul>
 		</div>
-
-	</div>
-	
-	<div id="cellSettingModal" class="modal fade" role="dialog">
-	  <div class="modal-dialog">
-
-		<!-- Modal content-->
-		<div class="modal-content">
-		  <div class="modal-header">
-			<button type="button" class="close" data-dismiss="modal">&times;</button>
-			<h4 id="cellSettingTitleId" class="modal-title">Modal Header</h4>
-		  </div>
-		  <div class="modal-body">
-		  	<div class="row">
-				<div class="col-sm-4">Cell id</div>
-				<div class="col-sm-4">
-					<input type="input" class="form-control" id="cellidSetting" disabled>
-				</div>
-			</div>
-			<div class="row">
-				<div class="col-sm-4">PS resources</div>
-				<div class="col-sm-4">
-					<input type="input" class="form-control" id="psresourcesSettingId">
-				</div>
-			</div>
-			<div class="row">
-				<div class="col-sm-4">CS resources</div>
-				<div class="col-sm-4">
-					<input type="input" class="form-control" id="csresourcesSettingId">
-				</div>
-			</div>
-		  </div>
-		  <div class="modal-footer">
-			<button onclick="setCellSettings(getElementById('cellidSetting').value)" type="button" class="btn btn-success" data-dismiss="modal">Save</button>
-			<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-		  </div>
-		</div>
-
-	  </div>
-	</div>
-	
-    <div id="ueSettingModal" class="modal fade" role="dialog">
-	  <div class="modal-dialog">
-
-		<!-- Modal content-->
-		<div class="modal-content">
-		  <div class="modal-header">
-			<button type="button" class="close" data-dismiss="modal">&times;</button>
-			<h4 id="cellSettingTitleId" class="modal-title">Modal Header</h4>
-		  </div>
-		  <div class="modal-body">
-		  </div>
-		  <div class="modal-footer">
-			<button onclick="setCellSettings(getElementById('cellidSetting').value)" type="button" class="btn btn-success" data-dismiss="modal">Save</button>
-			<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-		  </div>
-		</div>
-
-	  </div>
 	</div>
 </div>
 
