@@ -41,10 +41,6 @@
 		overflow: auto;
 		background-color: gray;
     }
-	
-	span{
-	padding-left: 15px;
-	}
 
 .btn-mainbar-1 {
 	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #424242), color-stop(1, #4d4d4d));
@@ -119,6 +115,7 @@ var WHITE = "#D2D2D2"
 var cellArray = new Array();
 var ueGuiContainer = new Container();
 var ueArray = new Array();
+var draggingObject = false;
 
 //sidebar variables
 function sidebarElement(elamentKurwaName, elementIdKurwa, isLockedKurwa){
@@ -181,6 +178,8 @@ function UE(id, startPosX, startPosY){
 	this.id = id;
     this.startPosX = startPosX;
     this.startPosY = startPosY;
+	this.speechPriority = 1;
+	this.psPriority = 5;
 	this.psconnection = false;
 	this.csconnection = false;
 	this.connectionInfo = function(){
@@ -227,12 +226,14 @@ function UE(id, startPosX, startPosY){
 			this.psconnection = true;
 		}
 		this.updateActiveSet(cellArray);
+		refreshSidebar();
 	}
 	
 	this.stopPsConnection = function(){
 	
 		this.psconnection = false;
 		this.updateActiveSet(cellArray);
+		refreshSidebar();
 	}
 	
 	this.startCsConnection = function(){
@@ -260,17 +261,35 @@ function UE(id, startPosX, startPosY){
 			this.csconnection = true;
 		}
 		this.updateActiveSet(cellArray);
+		refreshSidebar();
 	}
 	
 	this.stopCsConnection = function(){
 		this.csconnection = false;
 		this.updateActiveSet(cellArray);
+		
+		refreshSidebar();
 	}
 	
 	this.getInfo = function()
 	{
 		return 'UE(id: ' + this.id + ', startCell: ' + this.startCell + ', activeSet = [' + this.activeSet.toString() + ']' + ', connection: ' +  this.connectionInfo() + ')';
 	};
+	
+	this.activeSetToString = function(){
+		var string = '[';
+		for(var i = 0; i < this.activeSet.length; i++){
+			string = string + 'Cell_' + this.activeSet[i];
+			
+			if( i+1 < this.activeSet.length){
+				string = string + ',';
+			}
+		}
+		
+		string = string + ']';
+		
+		return string;
+	}
 	
 	this.setStartCell = function(cells)
 	{
@@ -434,25 +453,31 @@ function UE(id, startPosX, startPosY){
 			 
 			 
 			ueGuiContainer.on("pressup", function(e){
-			 
-				if(!getUeById(e.target.name).psconnection && !getUeById(e.target.name).csconnection){
-					getUeById(e.target.name).setStartCell(cellArray);
-				}
+			
+				draggingObject = false;
+				refreshSidebar();
+				
 			});
 			
-			interval(1000, function(){
-				for(var i = 0; i < ueArray.length; i++){
-					if(ueArray[i].csconnection || ueArray[i].psconnection){
-						ueArray[i].updateActiveSet(cellArray);
+			ueGuiContainer.on("mousedown", function(e){
+				
+				draggingObject = true;
+				refreshSidebar();
+			});
+			
+			interval(500, function(){
+				if(draggingObject)
+				{
+					for(var i = 0; i < ueArray.length; i++){
+						if(ueArray[i].csconnection || ueArray[i].psconnection){
+							ueArray[i].updateActiveSet(cellArray);
+						}else{
+							getUeById(ueArray[i].id).setStartCell(cellArray);
+						}
 					}
+					refreshSidebar();
 				}
 			})
-			 
-			/*button.on("click", function()
-			{
-				submitCommand(commandInput,commandHistoryArray,commandHistoryLabels );
-			});*/
-			 
 			stage.update(); // this is needed to show any changes
 		}); //end of complete 
 		
@@ -652,7 +677,7 @@ function getCellSettings(id){
 	
 	//remove all not locked elements
 	var isInElements = false;
-	var element = ["Cell", id, false];
+	var element = ["Cell", id, false, false, false]; //elementName, elementId, isLocked, cellInfocollapse, cellSettingscollapse
 	
 	for(var i = 0; i < sidebarElements.length; i++){
 		if(sidebarElements[i][0] == element[0] && sidebarElements[i][1] == element[1] && sidebarElements[i][2] == true){
@@ -679,7 +704,13 @@ function getCellSettings(id){
 }
 
 function setCellSettings(id){
+
+	var hsAdmUsersHtmlId = 'cell_' + id + '_hsAdmUsersValue';
+	var speechAdmUsersHtmlId = 'cell' + id + '_speechAdmUsersValue';
+	
 	var cell = getCellById(id);
+	cell.hsAdmUsers = document.getElementById(hsAdmUsersHtmlId).value;
+	cell.speechAdmUsers = document.getElementById(speechAdmUsersHtmlId).value;
 }
 
 function getUesListForDropDown(){
@@ -697,7 +728,7 @@ function getUesListForDropDown(){
 function getUeSettings(id){
 		//remove all not locked elements
 	var isInElements = false;
-	var element = ["UE", id, false];
+	var element = ["UE", id, false,false,false,false]; //elementName, elementId, isLocked, ueInfoCollapse, ueActionsCollapse, ueSettings collapse
 	
 	for(var i = 0; i < sidebarElements.length; i++){
 		if(sidebarElements[i][0] == element[0] && sidebarElements[i][1] == element[1] && sidebarElements[i][2] == true){
@@ -721,6 +752,11 @@ function getUeSettings(id){
 	refreshSidebar();
 }
 
+function setUeSettings(id){
+
+	alert("ueSetting" + id);
+}
+
 function lockPanel(panelType, id){
 	
 	var glyphicon = '';
@@ -729,9 +765,9 @@ function lockPanel(panelType, id){
 		if(sidebarElements[i][0] == panelType && sidebarElements[i][1] == id){
 			sidebarElements[i][2] = !sidebarElements[i][2];
 			if(sidebarElements[i][2]){
-				glyphicon = 'glyphicon glyphicon-eye-open';
+				glyphicon = 'fas fa-lock';
 			}else{
-				glyphicon = 'glyphicon glyphicon-eye-close';
+				glyphicon = 'fas fa-lock-open';
 			}
 		}
 	}
@@ -751,7 +787,6 @@ function getActiveSettingsHtml(){
 		if(sidebarElements[i][0] == "Cell"){
 			finalInnerHtml = finalInnerHtml + prepareCellSettingsPanel(sidebarElements[i][1]);
 		}else{
-			zog("getActiveSettingsHtml UE case");
 			finalInnerHtml = finalInnerHtml + prepareUeSettingsPanel(sidebarElements[i][1]);
 		}
 	}
@@ -765,62 +800,206 @@ function prepareCellSettingsPanel(id){
  var finalInnerHtml ='';
  
  var part1 = '<div class="panel panel-default"><div class="panel-heading"><b>Cell';
- var part2 = '</b><span id="Cell_';
+ var part2 = '</b><span style="padding-right: 15px; float: right;" id="Cell_';
  var part3 = '_lockSpan" onclick = ';
  var part4 = '"lockPanel(';
  var part5 = "'Cell' ,"; 
  var part6 = ')" class="'
- var glyphicon = 'glyphicon glyphicon-eye-close';
+ var glyphicon = 'fas fa-lock-open';
   
  for(var i = 0; i < sidebarElements.length; i++){
 	if(sidebarElements[i][0] == "Cell" && sidebarElements[i][1] == id){
 		if(sidebarElements[i][2]){
-			glyphicon = 'glyphicon glyphicon-eye-open';
+			glyphicon = 'fas fa-lock';
 		}
 	}
  }
 
- var part7 = '"></span></div><div class="panel-body"><div class="panel panel-default"><div class="panel-heading">Cell info</div><div class="panel-body"><div class="row setting"><div class="col-lg-8">Cell ID</div><div class="col-lg-4">';
- var part8 = '</div></div><div class="row setting"><div class="col-lg-8">EULHS users count</div><div class="col-lg-4">';
- var part9 = '</div></div><div class="row setting"><div class="col-lg-8">Speech users count</div><div class="col-lg-4">';
- var part10 = '</div></div></div></div><div class="panel panel-default"><div class="panel-heading">Cell settings</div><div class="panel-body"><div class="row setting"><div class="col-lg-8">hsAdmUsers</div><div class="col-lg-4"><input type="text" class="form-control" id="cell_';
- var part11 = '_hsAdmUsersValue"></div></div><div class="row setting"><div class="col-lg-8">speechAdmUsers</div><div class="col-lg-4"><input type="text" class="form-control" id="cell_';
- var part12 = '_speechAdmUsersValue"></div></div><div class="row setting"><div class="col-lg-12"><button onclick="setCellSettings(';
- var part13 = ')" class="btn btn-primary btn-block" type="button" >Save settings<span class="glyphicon glyphicon-save"></span></button></div></div></div></div></div></div>';
+ var part7 = '"></span></div><div class="panel-body"><div class="panel panel-default"><div class="panel-heading"><span style="padding-right: 15px;" class="fas fa-info"></span>Cell info</div><div class="panel-body"><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-broadcast-tower"></span>Cell ID</div><div style="padding-right: 30px; text-align: right;" class="col-lg-4">';
+ var part8 = '</div></div><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-exchange-alt"></span>EULHS users count</div><div style="padding-right: 30px; text-align: right;" class="col-lg-4">';
+ var part9 = '</div></div><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-phone"></span>Speech users count</div><div style="padding-right: 30px; text-align: right;" class="col-lg-4">';
+ var part10 = '</div></div></div></div><div class="panel panel-default"><div class="panel-heading"><span style="padding-right: 15px;" class="fas fa-cog"></span>Cell settings</div><div class="panel-body"><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-users-cog"></span>MaxHsAdmUsers</div><div class="col-lg-4"><input style="text-align: center;" value="'
+ var part11 = '" type="text" class="form-control" id="cell_';
+ var part12 = '_hsAdmUsersValue"></div></div><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-users-cog"></span>MaxSpeechAdmUsers</div><div class="col-lg-4"><input style="text-align: center;" value="';
+ var part13 = '" type="text" class="form-control" id="cell_';
+ var part14 = '_speechAdmUsersValue"></div></div><div class="row setting"><div class="col-lg-12"><button onclick="setCellSettings(';
+ var part15 = ')" class="btn btn-primary btn-block" type="button">Save settings<span style="padding-left: 15px;" class="fas fa-save"></span></button></div></div></div></div></div></div>';
  
- finalInnerHtml = part1 + id + part2 + id + part3 + part4 + part5 + id + part6 + glyphicon + part7 + id + part8 + getCellById(id).eulHsUsersCount + part9 + getCellById(id).speechUsersCount + part10 + id + part11 + id + part12 + id + part13;
+ finalInnerHtml = part1 + id + part2 + id + part3 + part4 + part5 + id + part6 + glyphicon + part7 + id + part8 + getCellById(id).eulHsUsersCount + part9 + getCellById(id).speechUsersCount + part10 + getCellById(id).hsAdmUsers + part11 + id + part12 + getCellById(id).speechAdmUsers + part13 + id + part14 + id + part15;
  
  return finalInnerHtml;
 }
 
 function prepareUeSettingsPanel(id){
+
+ var ueInfoCollapse = false;
+ var ueActionsCollapse = false;
+ var ueSettingCollapse = false;
+
  var finalInnerHtml ='';
  
  var part1 = '<div class="panel panel-default"><div class="panel-heading"><b>UE';
- var part2 = '</b><span id="UE_';
- var part3 = '_lockSpan" onclick = ';
+ var part2 = '</b><span style="padding-right: 15px; float: right;" id="UE_';
+ var part3 = '_lockSpan" onclick=';
  var part4 = '"lockPanel(';
  var part5 = "'UE' ,"; 
  var part6 = ')" class="'
- var glyphicon = 'glyphicon glyphicon-eye-close';
+ var glyphicon = 'fas fa-lock-open';
   
  for(var i = 0; i < sidebarElements.length; i++){
 	if(sidebarElements[i][0] == "UE" && sidebarElements[i][1] == id){
 		if(sidebarElements[i][2]){
-			glyphicon = 'glyphicon glyphicon-eye-open';
+			glyphicon = 'fas fa-lock';
+		}
+		
+		if(sidebarElements[i][3]){ //info collapse
+			ueInfoCollapse = true;
+		}
+		
+		if(sidebarElements[i][4]){ //info collapse
+			ueActionsCollapse = true;
+		}
+		
+		if(sidebarElements[i][5]){ //info collapse
+			ueSettingCollapse = true;
 		}
 	}
+	
  }
  
- var part7 = '"></span></div><div class="panel-body"></div></div>';
+ var part7 = '"></span></div><div class="panel-body"><div class="panel panel-default"><div onclick="setCollapse(' + "'UE'" + ',' + id + ",'info'" + ')" data-toggle="collapse" href="#ue_';
+ var part8 = '_Info"  class="panel-heading"><span style="padding-right: 15px;" class="fas fa-info"></span>UE info</div><div id="ue_';
+ var part9;
  
- finalInnerHtml = part1 + id + part2 + id + part3 + part4 + part5 + id + part6 + glyphicon + part7
+ if(ueInfoCollapse){
+	part9 = '_Info" class="panel-collapse collapse in" aria-expanded="true" style=""><div class="panel-body"><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-mobile-alt"></span>UE id</div><div style="padding-right: 30px; text-align:right;" class="col-lg-4">';
+ }else{
+	part9 = '_Info" class="panel-collapse collapse" aria-expanded="false" style="height: 0px;"><div class="panel-body"><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-mobile-alt"></span>UE id</div><div style="padding-right: 30px; text-align:right;" class="col-lg-4">';
+ }
+ 
+ var part10 = '</div></div><div class="row setting"><div class="col-lg-6"><span style="padding-right: 15px;" class="fas fa-plug"></span>Current connection</div><div id="ue_';
+ var part11 = '_conn" style="padding-right: 30px; text-align:right;" class="col-lg-6">';
+ var part12 = '</div></div><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="far fa-circle"></span>Start cell</div><div id="ue_';
+ var part13 = '_startCell" style="padding-right: 30px; text-align:right;" class="col-lg-4">Cell_';
+ var part14 = '</div></div><div class="row setting"><div class="col-lg-6"><span style="padding-right: 15px;" class="fas fa-bullseye"></span>Active set</div><div id="ue_';
+ var part15 = '_activeSet" style="padding-right: 30px; text-align:right;" class="col-lg-6">';
+ var part16 = '</div></div></div></div></div><div class="panel panel-default"><div onclick="setCollapse(' + "'UE'" + ',' + id + ",'actions'" + ')" data-toggle="collapse" href="#ue_';
+ var part17 = '_Actions" class="panel-heading"><span style="padding-right: 15px;" class="fas fa-play"></span>UE actions</div><div id="ue_';
+ 
+ var part18;
+ if(ueActionsCollapse){
+	part18 = '_Actions" class="panel-collapse collapse in" aria-expanded="true" style=""><div class="panel-body"><div class="row setting"><div id="ue_';
+ }else{
+	part18 = '_Actions" class="panel-collapse collapse" aria-expanded="false" style="height: 0px;"><div class="panel-body"><div class="row setting"><div id="ue_';
+ }
+ 
+ var part19 = '_speechCallButton" class="col-lg-12">';
+ 
+ var part20;
+ 
+ if(getUeById(id).csconnection){
+	part20 = getStopSpeechButtonForUe(id);
+ }else{
+	part20 = getStartSpeechButtonForUe(id);
+ }
+ 
+ var part21 = '</div></div><div class="row setting"><div id="ue_';
+ var part22 = '_psCallButton" class="col-lg-12">';
+ 
+ var part23;
+ 
+ if(getUeById(id).psconnection){
+	part23 = getStopPsButtonForUe(id);
+ }else{
+	part23 = getStartPsButtonForUe(id);
+ }
+ 
+ var part24 = '</div></div></div></div></div><div class="panel panel-default"><div data-toggle="collapse" href="#ue_';
+ var part25 = '_Settings" class="panel-heading"><span style="padding-right: 15px;" class="fas fa-cog"></span>UE settings</div><div id="ue_';
+ var part26 = '_Settings" class="panel-collapse collapse"><div class="panel-body"><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-sort-amount-up"></span>Speech priority</div><div class="col-lg-4"><input style="text-align: center;" value="';
+ var part27 = '" type="text" class="form-control" id="ue_';
+ var part28 = '_speechPriority"></div></div><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-sort-amount-up"></span>PS priority</div><div class="col-lg-4"><input style="text-align: center;" value="';
+ var part29 = '" type="text" class="form-control" id="ue_';
+ var part30 = '_psPriority"></div></div><div class="row setting"><div class="col-lg-12"><button onclick="setUeSettings(';
+ var part31 = ')" class="btn btn-primary btn-block" type="button">Save settings<span style="padding-left: 15px;" class="fas fa-save"></span></button></div></div></div></div></div></div></div>';
+ 
+ finalInnerHtml = part1 + id + part2 + id + part3 + part4 + part5 + id + part6 + glyphicon + part7 + id + part8 + id + part9 + id + part10 + id + part11 + getUeById(id).connectionInfo() + part12 + id + part13 + getUeById(id).startCell + part14 + id + part15 + getUeById(id).activeSetToString() + part16 + id + part17 + id + part18 + id + part19 + part20 + part21 + id + part22 + part23 + part24 + id + part25 + id + part26 + getUeById(id).speechPriority + part27 + id + part28 + getUeById(id).psPriority + part29 + id + part30 + id + part31;
  
  return finalInnerHtml;
  
 }
 
+function setCollapse(elementName, elementId, panelName){
+	
+	if(elementName == "UE")
+	{	
+		for(var i = 0; i < sidebarElements.length; i++){
+			if(sidebarElements[i][0] == "UE" && sidebarElements[i][1] == elementId){
+				
+				if(panelName == "info"){
+					sidebarElements[i][3] = !sidebarElements[i][3];
+				}
+				if(panelName == "actions"){
+					sidebarElements[i][4] = !sidebarElements[i][4];
+				}
+				
+				if(panelName == "settings"){
+					sidebarElements[i][5] = !sidebarElements[i][5];
+				}
+			}
+		}
+	}else{
+		for(var i = 0; i < sidebarElements.length; i++){
+			if(sidebarElements[i][0] == "Cell" && sidebarElements[i][1] == elementId){
+				
+				if(panelName == "info"){
+					sidebarElements[i][3] = !sidebarElements[i][3];
+				}
+				
+				if(panelName == "settings"){
+					sidebarElements[i][4] = !sidebarElements[i][4];
+				}
+			}
+		}
 
+	}
+}
+
+function getStopSpeechButtonForUe(id){
+	var buttonHtml = '<button onclick="getUeById(' + id + ').stopCsConnection()" class="btn btn-danger btn-block" type="button" >Stop speech<span style="padding-left: 15px;" class="fas fa-phone"></span></button>';
+	
+	return buttonHtml;
+}
+
+function getStartSpeechButtonForUe(id){
+		var buttonHtml = '<div class="dropdown"><button class="btn btn-success dropdown-toggle btn-block" type="button" data-toggle="dropdown">Start speech call<span style="padding-left:15px;" class="fas fa-phone"></span></button><ul style="text-align:center;" class="dropdown-menu btn-block">' + getTerminatingUesList(id) +  '</ul></div>';
+	
+		return buttonHtml;
+}
+
+function getStopPsButtonForUe(id){
+	return '<button onclick="getUeById(' + id + ').stopPsConnection()" class="btn btn-warning btn-block" type="button" >Stop PS<span style="padding-left: 15px;" class="fas fa-exchange-alt"></span></button>';
+}
+
+function getStartPsButtonForUe(id){
+	return '<button onclick="getUeById(' + id + ').startPsConnection()" class="btn btn-primary btn-block" type="button" >Start PS<span style="padding-left: 15px;" class="fas fa-exchange-alt"></span></button>';
+}
+
+function getTerminatingUesList(id){
+	
+	var listElementId = 'ue_' + id + '__terminatingUeList';
+	var listHtml = '';
+
+	for(var i = 0; i < ueArray.length; i++){
+		if(ueArray[i].id != id && ueArray[i].csconnection == false){
+			listHtml = '<li><a onclick="getUeById(' + id + ').startCsConnection(' + ueArray[i].id + ')" href="#">UE_' + ueArray[i].id + '</a></li>'
+		}
+	}
+	
+	return listHtml;
+	
+	
+}
 
 function refreshSidebar(){
 
@@ -829,6 +1008,7 @@ function refreshSidebar(){
 </script>
 
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="assets/fontawesome/css/all.css" rel="stylesheet">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
@@ -838,19 +1018,98 @@ function refreshSidebar(){
 <body>
 <div class="container-fluid">
 	<div class="row">
-		<div class="col-lg-8">
+		<div class="col-lg-7">
 			<div class="row">
 				<section id="holder"></section>
 			</div>
 		</div>
 		
-		<div id="sidebar" class="col-lg-2 sidebar">
+		<div id="sidebar" class="col-lg-3 sidebar">
+			<div class="panel panel-default">
+				<div class="panel-heading">
+					<b>UE1</b><span style="padding-right: 15px; float: right;" id="UE_1_lockSpan" onclick="lockPanel('UE' ,1)" class="fas fa-lock-open"></span>
+				</div>
+				<div class="panel-body">
+					<div class="panel panel-default">
+						<div data-toggle="collapse" href="#ue_1_Info"  class="panel-heading">
+							<span style="padding-right: 15px;" class="fas fa-info"></span>UE info
+						</div>
+						<div id="ue_1_Info" class="panel-collapse collapse">
+							<div class="panel-body">
+								<div class="row setting">
+									<div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-mobile-alt"></span>UE id</div>
+									<div style="padding-right: 30px; text-align:right;" class="col-lg-4">1</div>
+								</div>
+								<div class="row setting">
+									<div class="col-lg-6"><span style="padding-right: 15px;" class="fas fa-plug"></span>Current connection</div>
+									<div style="padding-right: 30px; text-align:right;" class="col-lg-6">int_eul_hs_speech_12_2</div>
+								</div>
+								<div class="row setting">
+									<div class="col-lg-8"><span style="padding-right: 15px;" class="far fa-circle"></span>Start cell</div>
+									<div style="padding-right: 30px; text-align:right;" class="col-lg-4">Cell_1</div>
+								</div>
+								<div class="row setting">
+									<div class="col-lg-6"><span style="padding-right: 15px;" class="fas fa-bullseye"></span>Active set</div>
+									<div style="padding-right: 30px; text-align:right;" class="col-lg-6">[Cell_1,Cell_2,Cell_3]</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="panel panel-default">
+						<div data-toggle="collapse" href="#ue_1_Actions" class="panel-heading">
+							<span style="padding-right: 15px;" class="fas fa-play"></span>UE actions
+						</div>
+						<div id="ue_1_Actions" class="panel-collapse collapse">
+							<div class="panel-body">
+								<div class="row setting">
+									<div class="col-lg-12">
+										<div class="dropdown">
+										  <button onclick="" class="btn btn-success dropdown-toggle btn-block" type="button" data-toggle="dropdown">Start speech call
+										  <span style="padding-left: 15px;" class="fas fa-phone"></span></button>
+										  <ul id="ue_1_terminatingUeList"style="text-align:center;" class="dropdown-menu btn-block">
+											<li><a href="#">UE_2</a></li>
+										  </ul>
+										</div>
+									</div>
+								</div>
+								<div class="row setting">
+									<div class="col-lg-12">
+										<button onclick="" class="btn btn-primary btn-block" type="button" >Start PS<span style="padding-left: 15px;" class="fas fa-exchange-alt"></span></button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="panel panel-default">
+						<div data-toggle="collapse" href="#ue_1_Settings" class="panel-heading">
+							<span style="padding-right: 15px;" class="fas fa-cog"></span>UE settings
+						</div>
+						<div id="ue_1_Settings" class="panel-collapse collapse">
+							<div class="panel-body">
+								<div class="row setting">
+									<div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-sort-amount-up"></span>Speech priority</div>
+									<div class="col-lg-4"><input style="text-align: center;" value="1" type="text" class="form-control" id="ue_1_speechPriority"></div>
+								</div>
+								<div class="row setting">
+									<div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-sort-amount-up"></span>PS priority</div>
+									<div class="col-lg-4"><input style="text-align: center;" value="5" type="text" class="form-control" id="ue_1_speechPriority"></div>
+								</div>								
+								<div class="row setting">
+									<div class="col-lg-12">
+										<button onclick="setUeSettings(1)" class="btn btn-primary btn-block" type="button">Save settings<span style="padding-left: 15px;" class="fas fa-save"></span></button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 		
 		<div id="mainbar" class="col-lg-2 mainbar">
 			<ul class="nav nav-pills nav-stacked left-menu">
 				<li>
-				  <button class="btn-mainbar-1 btn-block" type="button" data-target="#item1" data-toggle="collapse" data-parent="#stacked-menu">Cells<span class="glyphicon glyphicon-record"></span></button>
+				  <button class="btn-mainbar-1 btn-block" type="button" data-target="#item1" data-toggle="collapse" data-parent="#stacked-menu">Cells<span style="padding-left: 15px;" class="fas fa-broadcast-tower"></span></button>
 				  <ul class="nav nav-stacked collapse left-submenu" id="item1">
 					<li onclick="getCellSettings(1)" class="btn-mainbar-2 btn-block">Cell 1</li>
 					<li onclick="getCellSettings(2)" class="btn-mainbar-2 btn-block">Cell 2</li>
@@ -858,7 +1117,7 @@ function refreshSidebar(){
 				  </ul>
 				</li>
 				<li>
-				  <button onclick="getUesListForDropDown()" class="btn-mainbar-1 btn-block" type="button" data-target="#uesDropdownList" data-toggle="collapse" data-parent="#stacked-menu">UEs<span class="glyphicon glyphicon-phone"></span></span></button>         
+				  <button onclick="getUesListForDropDown()" class="btn-mainbar-1 btn-block" type="button" data-target="#uesDropdownList" data-toggle="collapse" data-parent="#stacked-menu">UEs<span style="padding-left: 15px;" class="fas fa-mobile-alt"></span></button>         
 				  <ul id="uesDropdownList" class="nav nav-pills nav-stacked collapse" id="item2">
 				  </ul>
 				</li>
