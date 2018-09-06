@@ -1062,7 +1062,7 @@ function getTerminatingUesList(id){
 
 	for(var i = 0; i < ueArray.length; i++){
 		if(ueArray[i].id != id && ueArray[i].csconnection == false){
-			listHtml = '<li><a onclick="getUeById(' + id + ').startCsConnection(' + ueArray[i].id + ')" href="#">UE_' + ueArray[i].id + '</a></li>'
+			listHtml = '<li><a onclick="getUeById(' + id + ').startCsConnection(' + ueArray[i].id + ')" >UE_' + ueArray[i].id + '</a></li>'
 		}
 	}
 	
