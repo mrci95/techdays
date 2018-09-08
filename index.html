@@ -198,11 +198,13 @@ function UE(id, startPosX, startPosY){
 		}
 		return undefined;
 	}
+	
+	this.cellsInRange = new Array();
 	this.activeSet = new Array();
 	
 	this.startPsConnection = function(){
 		
-		if(this.csconnection == true)
+		if(this.csconnection == true) // Check ps resources for 
 		{
 			
 			for(var i = 0; i < this.activeSet.length; i++)
@@ -219,9 +221,21 @@ function UE(id, startPosX, startPosY){
 			if(!getCellById(this.startCell).admissionReq(connectionType.EULHS)){
 					return;
 			}
+			this.activeSet.push(this.startCell);
 			this.psconnection = true;
 		}
+		
+		
 		this.updateActiveSet(cellArray);
+		
+		if(this.psconnection){
+			for(var i = 0; i < this.activeSet.length; i++){
+				getCellById(this.activeSet[i]).eulHsUsersCount++;
+			}
+		}
+		
+
+		
 		refreshSidebar();
 	}
 	
@@ -271,6 +285,53 @@ function UE(id, startPosX, startPosY){
 		return true;
 	}
 	
+	this.softHoAddition = function(cell){
+	
+		switch(this.connectionInfo()){
+			case connectionType.EULHS: 
+				getCellById(cell).eulHsUsersCount++;
+				return true;
+			break;
+			case connectionType.SPEECH:
+				getCellById(cell).speechUsersCount++;
+				return true;
+			break;
+			
+			case connectionType.SPEECHEULHS: 
+				getCellById(cell).eulHsUsersCount++;
+				getCellById(cell).speechUsersCount++;
+				return true;
+			break;
+			
+			default:
+				return false;
+			
+		}
+	}
+	
+	this.softHoDeletion = function(cell){
+		switch(this.connectionInfo()){
+			case connectionType.EULHS: 
+				getCellById(cell).eulHsUsersCount--;
+				return true;
+			break;
+			case connectionType.SPEECH:
+				getCellById(cell).speechUsersCount--;
+				return true;
+			break;
+			
+			case connectionType.SPEECHEULHS: 
+				getCellById(cell).eulHsUsersCount--;
+				getCellById(cell).speechUsersCount--;
+				return true;
+			break;
+			
+			default:
+				return true;
+			
+		}
+	}
+	
 	this.stopCsConnection = function(){
 	
 		if(this.csconnection){
@@ -296,7 +357,7 @@ function UE(id, startPosX, startPosY){
 	
 	this.getInfo = function()
 	{
-		return 'UE(id: ' + this.id + ', startCell: ' + this.startCell + ', activeSet = [' + this.activeSet.toString() + ']' + ', connection: ' +  this.connectionInfo() + ')';
+		return 'UE(id: ' + this.id + ', startCell: ' + this.startCell + ', activeSet = [' + this.activeSet.toString() + ']' + ', connection: ' +  this.connectionInfo() + ', cellsInRange = [' + this.cellsInRange.toString() + ']' + ')';
 	};
 	
 	this.activeSetToString = function(){
@@ -332,14 +393,28 @@ function UE(id, startPosX, startPosY){
 		}
 		
 		this.startCell = startCell;
-		zog(this.getInfo());
 	};
+	
+	this.setCellsInRange = function(){
+	
+		this.cellsInRange = [];
+		
+		for(var i = 0; i< cellArray.length ; i++)
+		{
+				
+			var c = dist(cellArray[i].gui.x, cellArray[i].gui.y, this.gui.x,this.gui.y);
+			
+			if(c < 300)
+			{
+				this.cellsInRange.push(cellArray[i].id);
+			}
+		}
+	}
 	
 	this.updateActiveSet = function(cells)
 	{
-		var noOfCells = cells.length;
 		
-		if(this.psconnection || this.csconnection){
+		/*if(this.psconnection || this.csconnection){
 			for(var i = 0; i<noOfCells; i++)
 			{
 				var c = dist(cells[i].gui.x, cells[i].gui.y,this.gui.x,this.gui.y);
@@ -380,12 +455,56 @@ function UE(id, startPosX, startPosY){
 			if(isEmpty(this.activeSet)){
 				this.csconnection = false;
 				this.psconnection = false;
+			}*/
+			if(this.psconnection || this.csconnection){
+			//check for softHoAddition
+				for(var i = 0; i < this.cellsInRange.length; i++){
+					var alreadyInAs = false;
+					
+
+					
+					for(var j = 0; j < this.activeSet.length; j++){
+						if(this.cellsInRange[i] == this.activeSet[j]){
+							alreadyInAs = true;
+						}					
+					}
+					
+
+					
+					if(!alreadyInAs){
+						if(this.id == 1)
+							zog('now add to AS');
+						if(this.softHoAddition(this.cellsInRange[i])){
+							this.activeSet.push(this.cellsInRange[i]);
+						}
+					}
+				}
+				
+				//check for softHoDeletion
+				for(var i = 0; i < this.activeSet.length; i++){
+					var inRange = false;
+					
+					for(var j = 0; j < this.cellsInRange.length; j++){
+						if(this.activeSet[i] == this.cellsInRange[j]){
+							inRange = true;
+						}					
+					}
+					
+					if(!inRange){
+						if(this.softHoDeletion(this.activeSet[i])){
+							
+							this.activeSet.splice(i,1);
+							i--;
+						}
+					}
+				}
+				
+			}else{
+				this.activeSet = [];
 			}
-		}
-		else{
-			this.activeSet = [];
-		}
-		zog(this.getInfo());
+		
+		if(this.id == 1)
+			zog(this.getInfo());
 	}
 	
 	this.getActiveSetIndexFromCellId = function(id)
@@ -498,7 +617,8 @@ function UE(id, startPosX, startPosY){
 			
 				if(!getUeById(e.target.name).psconnection && !getUeById(e.target.name).csconnection){ 
 					getUeById(e.target.name).setStartCell(cellArray); 
-				} 
+				}
+				
 				draggingObject = false;
 				refreshSidebar();
 			});
@@ -510,10 +630,12 @@ function UE(id, startPosX, startPosY){
 				refreshSidebar();
 			});
 			
-			Ticker.add(function(){
+			interval(100, function(){
 				if(draggingObject)
 				{
 					for(var i = 0; i < ueArray.length; i++){
+						ueArray[i].setCellsInRange();	
+					
 						if(ueArray[i].csconnection || ueArray[i].psconnection){
 							ueArray[i].updateActiveSet(cellArray);
 						}else{
