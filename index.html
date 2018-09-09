@@ -232,9 +232,10 @@ function UE(id, startPosX, startPosY){
 			for(var i = 0; i < this.activeSet.length; i++){
 				getCellById(this.activeSet[i]).eulHsUsersCount++;
 			}
+			
+			this.gui.getChildAt(0).getChildAt(1).animate({obj:{alpha:1}, time:500});
 		}
 		
-
 		
 		refreshSidebar();
 	}
@@ -248,6 +249,8 @@ function UE(id, startPosX, startPosY){
 			getCellById(this.activeSet[i]).eulHsUsersCount--;
 		}
 		this.updateActiveSet(cellArray);
+		
+		this.gui.getChildAt(0).getChildAt(1).animate({obj:{alpha:0}, time:500});
 		
 		refreshSidebar();
 	}
@@ -271,10 +274,19 @@ function UE(id, startPosX, startPosY){
 			if(!getCellById(this.startCell).admissionReq(connectionType.SPEECH)){
 					return false;
 			}
+			this.activeSet.push(this.startCell);
 			this.csconnection = true;
 		}
+		
 		this.updateActiveSet(cellArray);
-		refreshSidebar();
+		
+		if(this.csconnection){
+			for(var i = 0; i < this.activeSet.length; i++){
+				getCellById(this.activeSet[i]).speechUsersCount++;
+			}
+			
+			this.gui.getChildAt(0).getChildAt(0).animate({obj:{alpha:1}, time:500});
+		}
 		
 		if(getUeById(this.terminatingUe).csconnection == false){
 			if(!getUeById(this.terminatingUe).startCsConnection(this.id)){
@@ -282,54 +294,9 @@ function UE(id, startPosX, startPosY){
 			}
 		}
 		
+		refreshSidebar();
+		
 		return true;
-	}
-	
-	this.softHoAddition = function(cell){
-	
-		switch(this.connectionInfo()){
-			case connectionType.EULHS: 
-				getCellById(cell).eulHsUsersCount++;
-				return true;
-			break;
-			case connectionType.SPEECH:
-				getCellById(cell).speechUsersCount++;
-				return true;
-			break;
-			
-			case connectionType.SPEECHEULHS: 
-				getCellById(cell).eulHsUsersCount++;
-				getCellById(cell).speechUsersCount++;
-				return true;
-			break;
-			
-			default:
-				return false;
-			
-		}
-	}
-	
-	this.softHoDeletion = function(cell){
-		switch(this.connectionInfo()){
-			case connectionType.EULHS: 
-				getCellById(cell).eulHsUsersCount--;
-				return true;
-			break;
-			case connectionType.SPEECH:
-				getCellById(cell).speechUsersCount--;
-				return true;
-			break;
-			
-			case connectionType.SPEECHEULHS: 
-				getCellById(cell).eulHsUsersCount--;
-				getCellById(cell).speechUsersCount--;
-				return true;
-			break;
-			
-			default:
-				return true;
-			
-		}
 	}
 	
 	this.stopCsConnection = function(){
@@ -349,6 +316,8 @@ function UE(id, startPosX, startPosY){
 			this.terminatingUe = undefined;
 			
 			this.updateActiveSet(cellArray);
+			
+			this.gui.getChildAt(0).getChildAt(0).animate({obj:{alpha:0}, time:500});
 		}
 
 		
@@ -395,6 +364,53 @@ function UE(id, startPosX, startPosY){
 		this.startCell = startCell;
 	};
 	
+		this.softHoAddition = function(cell){
+	
+		switch(this.connectionInfo()){
+			case connectionType.EULHS: 
+				getCellById(cell).eulHsUsersCount++;
+				return true;
+			break;
+			case connectionType.SPEECH:
+				getCellById(cell).speechUsersCount++;
+				return true;
+			break;
+			
+			case connectionType.SPEECHEULHS: 
+				getCellById(cell).eulHsUsersCount++;
+				getCellById(cell).speechUsersCount++;
+				return true;
+			break;
+			
+			default:
+				return false;
+			
+		}
+	}
+	
+	this.softHoDeletion = function(cell){
+		switch(this.connectionInfo()){
+			case connectionType.EULHS: 
+				getCellById(cell).eulHsUsersCount--;
+				return true;
+			break;
+			case connectionType.SPEECH:
+				getCellById(cell).speechUsersCount--;
+				return true;
+			break;
+			
+			case connectionType.SPEECHEULHS: 
+				getCellById(cell).eulHsUsersCount--;
+				getCellById(cell).speechUsersCount--;
+				return true;
+			break;
+			
+			default:
+				return true;
+			
+		}
+	}
+	
 	this.setCellsInRange = function(){
 	
 		this.cellsInRange = [];
@@ -413,98 +429,52 @@ function UE(id, startPosX, startPosY){
 	
 	this.updateActiveSet = function(cells)
 	{
-		
-		/*if(this.psconnection || this.csconnection){
-			for(var i = 0; i<noOfCells; i++)
-			{
-				var c = dist(cells[i].gui.x, cells[i].gui.y,this.gui.x,this.gui.y);
+		if(this.psconnection || this.csconnection){
+		//check for softHoAddition
+			for(var i = 0; i < this.cellsInRange.length; i++){
+				var alreadyInAs = false;
 				
-				var index = this.getActiveSetIndexFromCellId(cells[i].id);
+
 				
-				//zog('cell_id: ' + cells[i].id + ', ASindex: ' + index + ', distance: ' + c);
-				
-				if(c < 300 && index == -1 )
-				{
-					//zog('add cell ' + cells[i].id + ' to AS'); 
-					if(this.psconnection == true){
-						cells[i].eulHsUsersCount++;
-					}
-					
-					if(this.csconnection == true){
-						cells[i].speechUsersCount++;
-					}
-					
-					this.activeSet.push(cells[i].id);
+				for(var j = 0; j < this.activeSet.length; j++){
+					if(this.cellsInRange[i] == this.activeSet[j]){
+						alreadyInAs = true;
+					}					
 				}
-				else if (c > 300 && index != -1)
-				{
-					//zog('remove cell ' + cells[i].id + 'from AS'); 
-					
-					if(this.psconnection == true){
-						cells[i].eulHsUsersCount--;
+				
+
+				
+				if(!alreadyInAs){
+					if(this.id == 1)
+						zog('now add to AS');
+					if(this.softHoAddition(this.cellsInRange[i])){
+						this.activeSet.push(this.cellsInRange[i]);
 					}
-					
-					if(this.csconnection == true){
-						cells[i].speechUsersCount--;
-					}
-					
-					this.activeSet.splice(index,1);
 				}
 			}
 			
-			if(isEmpty(this.activeSet)){
-				this.csconnection = false;
-				this.psconnection = false;
-			}*/
-			if(this.psconnection || this.csconnection){
-			//check for softHoAddition
-				for(var i = 0; i < this.cellsInRange.length; i++){
-					var alreadyInAs = false;
-					
-
-					
-					for(var j = 0; j < this.activeSet.length; j++){
-						if(this.cellsInRange[i] == this.activeSet[j]){
-							alreadyInAs = true;
-						}					
-					}
-					
-
-					
-					if(!alreadyInAs){
-						if(this.id == 1)
-							zog('now add to AS');
-						if(this.softHoAddition(this.cellsInRange[i])){
-							this.activeSet.push(this.cellsInRange[i]);
-						}
-					}
+			//check for softHoDeletion
+			for(var i = 0; i < this.activeSet.length; i++){
+				var inRange = false;
+				
+				for(var j = 0; j < this.cellsInRange.length; j++){
+					if(this.activeSet[i] == this.cellsInRange[j]){
+						inRange = true;
+					}					
 				}
 				
-				//check for softHoDeletion
-				for(var i = 0; i < this.activeSet.length; i++){
-					var inRange = false;
-					
-					for(var j = 0; j < this.cellsInRange.length; j++){
-						if(this.activeSet[i] == this.cellsInRange[j]){
-							inRange = true;
-						}					
-					}
-					
-					if(!inRange){
-						if(this.softHoDeletion(this.activeSet[i])){
-							
-							this.activeSet.splice(i,1);
-							i--;
-						}
+				if(!inRange){
+					if(this.softHoDeletion(this.activeSet[i])){
+						
+						this.activeSet.splice(i,1);
+						i--;
 					}
 				}
-				
-			}else{
-				this.activeSet = [];
 			}
-		
-		if(this.id == 1)
-			zog(this.getInfo());
+			
+		}else{
+			this.activeSet = [];
+		}
 	}
 	
 	this.getActiveSetIndexFromCellId = function(id)
@@ -552,7 +522,7 @@ function UE(id, startPosX, startPosY){
 
 		// put your code here (you can delete this sample code)
 		
-		frame.loadAssets(["ue.png"], "assets/");
+		frame.loadAssets(["ue.png", "call.png", "transfer.png" ], "assets/");
 		 
 		/*var console = new Container()
 			.addTo(stage)
@@ -611,12 +581,24 @@ function UE(id, startPosX, startPosY){
 			 ueArray.push(ue_2);
 			 guiAddUe(ue_2, stage);
 			 
-			 
+			 var ue_3 = new UE(3, 900, 500);
+			 ueArray.push(ue_3);
+			 guiAddUe(ue_3, stage);
+	
+			for(var i = 0; i < ueArray.length; i++){
+				
+				ueArray[i].gui.getChildAt(0).animate({obj:{y:-110, scale:0.16}, time:500, loop:true, rewind:true, sequence:50});
+			}
 				
 			ueGuiContainer.on("pressup", function(e){ 
+				
+				zog(e.target.name);
 			
-				if(!getUeById(e.target.name).psconnection && !getUeById(e.target.name).csconnection){ 
-					getUeById(e.target.name).setStartCell(cellArray); 
+			
+				if(!isNaN(e.target.name)){
+					if(!getUeById(e.target.name).psconnection && !getUeById(e.target.name).csconnection){ 
+						getUeById(e.target.name).setStartCell(cellArray); 
+					}
 				}
 				
 				draggingObject = false;
@@ -690,15 +672,34 @@ function guiAddUe(ue, stage){
 	//create gui for whole UE interface
 	ue.gui = new Container().addTo(ueGuiContainer);
 	
+	ue_gui_icons = new Container().addTo(ue.gui);
+	ue_gui_icons.name = 'gui_icons_ue' + ue.id;
 	//UE graphic
 	var phonePNG = frame.asset("ue.png").clone();
+	var callPNG = frame.asset("call.png").clone();
+	var transferPNG = frame.asset("transfer.png").clone();
 	
 	phonePNG
 		.sca(0.5)
 		.addTo(ue.gui)
 		.centerReg();
-	
 	phonePNG.name = ue.id;
+		
+	callPNG
+		.sca(0.15)
+		.addTo(ue_gui_icons)
+		.centerReg()
+		.pos(25,-100)
+		.alp(0);
+	callPNG.name = 'callIcon_ue' + ue.id;
+	
+	transferPNG
+		.sca(0.15)
+		.addTo(ue_gui_icons)
+		.centerReg()
+		.pos(-25,-100)
+		.alp(0);
+	transferPNG.name = 'transferIcon_ue' + ue.id;
 	
 	//UE label
 	var ue_Label = new Label("UE_id_" + ue.id, 15);
@@ -1003,12 +1004,20 @@ function prepareCellSettingsPanel(id){
  var part7 = '"></span></div><div class="panel-body"><div class="panel panel-default"><div onclick="setCollapse(' + "'Cell'" + ',' + id + ",'info'" + ')" data-toggle="collapse" href="#cell_' + id + '_info" class="panel-heading"><span style="padding-right: 15px;" class="fas fa-info"></span>Cell info</div>' + cellInfoCollapseHtml + '<div class="panel-body"><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-broadcast-tower"></span>Cell ID</div><div style="padding-right: 30px; text-align: right;" class="col-lg-4">';
  var part8 = '</div></div><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-exchange-alt"></span>EULHS users count</div><div style="padding-right: 30px; text-align: right;" class="col-lg-4">';
  var part9 = '</div></div><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-phone"></span>Speech users count</div><div style="padding-right: 30px; text-align: right;" class="col-lg-4">';
- var part10 = '</div></div></div></div></div><div class="panel panel-default"><div class="panel-heading"><span style="padding-right: 15px;" class="fas fa-cog"></span>Cell settings</div><div class="panel-body"><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-users-cog"></span>MaxHsAdmUsers</div><div class="col-lg-4"><input style="text-align: center;" value="'
+ 
+ var cellSettingsCollapseHtml;
+ if(cellSettingCollapse){
+	cellSettingsCollapseHtml = '<div id="cell_' + id + '_settings" class="panel-collapse collapse in" aria-expanded="true" style="">'
+ }else{
+	cellSettingsCollapseHtml = '<div id="cell_' + id + '_settings" class="panel-collapse collapse" aria-expanded="false" style="height:0px;">'
+ }
+ 
+ var part10 = '</div></div></div></div></div><div class="panel panel-default"><div onclick="setCollapse(' + "'Cell'" + ',' + id + ",'settings'" + ')" data-toggle="collapse" href="#cell_' + id + '_settings" class="panel-heading"><span style="padding-right: 15px;" class="fas fa-cog"></span>Cell settings</div>' + cellSettingsCollapseHtml + '<div class="panel-body"><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-users-cog"></span>MaxHsAdmUsers</div><div class="col-lg-4"><input style="text-align: center;" value="'
  var part11 = '" type="text" class="form-control" id="cell_';
  var part12 = '_hsAdmUsersValue"></div></div><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-users-cog"></span>MaxSpeechAdmUsers</div><div class="col-lg-4"><input style="text-align: center;" value="';
  var part13 = '" type="text" class="form-control" id="cell_';
  var part14 = '_speechAdmUsersValue"></div></div><div class="row setting"><div class="col-lg-12"><button onclick="setCellSettings(';
- var part15 = ')" class="btn btn-primary btn-block" type="button">Save settings<span style="padding-left: 15px;" class="fas fa-save"></span></button></div></div></div></div></div></div>';
+ var part15 = ')" class="btn btn-primary btn-block" type="button">Save settings<span style="padding-left: 15px;" class="fas fa-save"></span></button></div></div></div></div></div></div></div>';
  
  finalInnerHtml = part1 + id + part2 + id + part3 + part4 + part5 + id + part6 + glyphicon + part7 + id + part8 + getCellById(id).eulHsUsersCount + part9 + getCellById(id).speechUsersCount + part10 + getCellById(id).hsAdmUsers + part11 + id + part12 + getCellById(id).speechAdmUsers + part13 + id + part14 + id + part15;
  
@@ -1184,7 +1193,7 @@ function getTerminatingUesList(id){
 
 	for(var i = 0; i < ueArray.length; i++){
 		if(ueArray[i].id != id && ueArray[i].csconnection == false){
-			listHtml = '<li><a onclick="getUeById(' + id + ').startCsConnection(' + ueArray[i].id + ')" >UE_' + ueArray[i].id + '</a></li>'
+			listHtml += '<li><a onclick="getUeById(' + id + ').startCsConnection(' + ueArray[i].id + ')" >UE_' + ueArray[i].id + '</a></li>'
 		}
 	}
 	
