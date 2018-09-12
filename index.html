@@ -103,6 +103,13 @@
 #cellIdSettingValue, #eulHsUsersCountSettingValue, #speechUsersCountSettingValue{
 	text-align: right;
 }
+
+.alert-bottom{
+    position: absolute;
+    bottom: 10px;
+    left:2%;
+    width: 96%;
+}
 	
 
 </style>
@@ -117,13 +124,9 @@ var ueGuiContainer = new Container();
 var ueArray = new Array();
 var draggingObject = false;
 
-//sidebar variables
-function sidebarElement(elamentKurwaName, elementIdKurwa, isLockedKurwa){
-	this.elamentName = elamentKurwaName;
-	this.elementId = elementIdKurwa;
-	this.isLocked = isLockedKurwa;
-} 
 var sidebarElements = new Array();
+var logs = new Array();
+
 
 const connectionType = {
     EULHS: 'int_eul_hs',
@@ -573,15 +576,15 @@ function UE(id, startPosX, startPosY){
 			 cellArray.push(cell_3);
 			 guiAddCell(cell_3, stage);
 			 
-			 var ue_1 = new UE(1, 500, 500);
+			 var ue_1 = new UE(1, 400, 200);
 			 ueArray.push(ue_1);
 			 guiAddUe(ue_1, stage);
 			 
-			 var ue_2 = new UE(2, 700, 500);
+			 var ue_2 = new UE(2, 600, 850);
 			 ueArray.push(ue_2);
 			 guiAddUe(ue_2, stage);
 			 
-			 var ue_3 = new UE(3, 900, 500);
+			 var ue_3 = new UE(3, 900, 300);
 			 ueArray.push(ue_3);
 			 guiAddUe(ue_3, stage);
 	
@@ -946,7 +949,7 @@ function lockPanel(panelType, id){
 
 function getActiveSettingsHtml(){
 	if(sidebarElements.length == 0){
-		return;
+		return '';
 	}
 	
 	var finalInnerHtml = '';
@@ -1244,6 +1247,40 @@ function refreshSidebar(){
 				  </ul>
 				</li>
 			</ul>
+			
+			<div id="alerts" class="row" style="margin-left:0px; margin-right:0px; position:absolute; bottom: 10px;">
+			
+			  <div class="alert alert-danger alert-dismissible fade in">
+				<a id="dimisAllert" data-dismiss="alert" ></a>
+				<strong>Danger!</strong> This alert box could indicate a dangerous or potentially negative action.
+			  </div>
+			
+			  <div class="alert alert-danger alert-dismissible fade in">
+				<a id="dimisAllert2" data-dismiss="alert" ></a>
+				<strong>Danger!</strong> This alert box could indicate a dangerous or potentially negative action.
+			  </div>
+			  
+			  <div class="alert alert-danger alert-dismissible fade in">
+				<a id="dimisAllert2" data-dismiss="alert" ></a>
+				<strong>Danger!</strong> This alert box could indicate a dangerous or potentially negative action.
+			  </div>
+			  
+			  <div class="alert alert-danger alert-dismissible fade in">
+				<a id="dimisAllert" data-dismiss="alert" ></a>
+				<strong>Danger!</strong> This alert box could indicate a dangerous or potentially negative action.
+			  </div>
+			  
+			  <div class="alert alert-danger alert-dismissible fade in">
+				<a id="dimisAllert" data-dismiss="alert" ></a>
+				<strong>Danger!</strong> This alert box could indicate a dangerous or potentially negative action.
+			  </div>
+			  
+			  <div class="alert alert-danger alert-dismissible fade in">
+				<a id="dimisAllert" data-dismiss="alert" ></a>
+				<strong>Danger!</strong> This alert box could indicate a dangerous or potentially negative action.
+			  </div>
+			  
+			</div>
 		</div>
 	</div>
 </div>
