@@ -176,10 +176,11 @@ function Cell(id, resources, startPosX, startPosY) {
   }
 }
 
-function UE(id, startPosX, startPosY){
+function UE(id, startPosX, startPosY, startCell){
 
 	this.id = id;
 	this.terminatingUe = undefined;
+	this.startCell = startCell;
     this.startPosX = startPosX;
     this.startPosY = startPosY;
 	this.speechPriority = 1;
@@ -213,6 +214,8 @@ function UE(id, startPosX, startPosY){
 			for(var i = 0; i < this.activeSet.length; i++)
 			{
 				if(!getCellById(this.activeSet[i]).admissionReq(connectionType.EULHS)){
+					DANGER('EULHS was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.activeSetToString());
+					refreshSidebar();
 					return;
 				}
 			}
@@ -221,14 +224,17 @@ function UE(id, startPosX, startPosY){
 		}
 		else
 		{
+			zog(this.startCell);
 			if(!getCellById(this.startCell).admissionReq(connectionType.EULHS)){
-					return;
+				DANGER('EULHS was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.startCell);
+				refreshSidebar();
+				return;
 			}
 			this.activeSet.push(this.startCell);
 			this.psconnection = true;
 		}
 		
-		
+		this.setCellsInRange();
 		this.updateActiveSet(cellArray);
 		
 		if(this.psconnection){
@@ -237,7 +243,11 @@ function UE(id, startPosX, startPosY){
 			}
 			
 			this.gui.getChildAt(0).getChildAt(1).animate({obj:{alpha:1}, time:500});
+			
+			SUCCESS('EULHS established for UE: ' + this.id + ', ActiveSet = ' + this.activeSetToString());
+			
 		}
+		
 		
 		
 		refreshSidebar();
@@ -251,6 +261,8 @@ function UE(id, startPosX, startPosY){
 		{
 			getCellById(this.activeSet[i]).eulHsUsersCount--;
 		}
+		
+		this.setCellsInRange();
 		this.updateActiveSet(cellArray);
 		
 		this.gui.getChildAt(0).getChildAt(1).animate({obj:{alpha:0}, time:500});
@@ -267,6 +279,8 @@ function UE(id, startPosX, startPosY){
 			for(var i = 0; i < this.activeSet.length; i++)
 			{
 				if(!getCellById(this.activeSet[i]).admissionReq(connectionType.SPEECH)){
+					DANGER('Speech was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.startCell);
+					refreshSidebar();
 					return false;
 				}
 			}
@@ -275,12 +289,15 @@ function UE(id, startPosX, startPosY){
 		else
 		{
 			if(!getCellById(this.startCell).admissionReq(connectionType.SPEECH)){
+					DANGER('Speech was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.startCell);
+					refreshSidebar();
 					return false;
 			}
 			this.activeSet.push(this.startCell);
 			this.csconnection = true;
 		}
 		
+		this.setCellsInRange();
 		this.updateActiveSet(cellArray);
 		
 		if(this.csconnection){
@@ -289,6 +306,9 @@ function UE(id, startPosX, startPosY){
 			}
 			
 			this.gui.getChildAt(0).getChildAt(0).animate({obj:{alpha:1}, time:500});
+		
+			SUCCESS('Speech established for UE: ' + this.id + ', ActiveSet = ' + this.activeSetToString());
+			
 		}
 		
 		if(getUeById(this.terminatingUe).csconnection == false){
@@ -318,6 +338,7 @@ function UE(id, startPosX, startPosY){
 			
 			this.terminatingUe = undefined;
 			
+			this.setCellsInRange();
 			this.updateActiveSet(cellArray);
 			
 			this.gui.getChildAt(0).getChildAt(0).animate({obj:{alpha:0}, time:500});
@@ -576,15 +597,16 @@ function UE(id, startPosX, startPosY){
 			 cellArray.push(cell_3);
 			 guiAddCell(cell_3, stage);
 			 
-			 var ue_1 = new UE(1, 400, 200);
+			 var ue_1 = new UE(1, 400, 200, 1);
 			 ueArray.push(ue_1);
 			 guiAddUe(ue_1, stage);
+			 ue_1.setStartCell(cellArray);
 			 
-			 var ue_2 = new UE(2, 600, 850);
+			 var ue_2 = new UE(2, 600, 850, 3);
 			 ueArray.push(ue_2);
 			 guiAddUe(ue_2, stage);
 			 
-			 var ue_3 = new UE(3, 900, 300);
+			 var ue_3 = new UE(3, 900, 300, 2);
 			 ueArray.push(ue_3);
 			 guiAddUe(ue_3, stage);
 	
@@ -1205,9 +1227,113 @@ function getTerminatingUesList(id){
 	
 }
 
+function getShortLogsList(){
+	
+	var finalHtml = '';
+	
+	if(logs.length == 0){
+		return finalHtml;
+	}
+	
+	if(logs.length > 6){
+		for( var i = logs.length - 6; i < logs.length; i++){
+			finalHtml += getAlertDiv(logs[i]);
+		}
+	}else{
+		for( var i = 0; i < logs.length; i++){
+			finalHtml += getAlertDiv(logs[i]);
+		}
+	}
+	
+	zog(finalHtml);
+	
+	return finalHtml;
+	
+}
+
+function getAlertDiv(logItem){
+
+var logType = '<div class="alert ' + logItem[0] + '">';
+
+var text ='<strong>' + logItem[2] + '</strong> ' + logItem[3]; 
+		
+return 	logType + text + '</div>';
+
+}
+
+function INFO(str){
+
+	var fullDateFormat = getFullDateFormat();
+	var currentTime = getCurrentTime();
+	
+	var logItem = ['alert-info',fullDateFormat,currentTime, str];
+	
+	logs.push(logItem);
+}
+
+function DANGER(str){
+
+	var fullDateFormat = getFullDateFormat();
+	var currentTime = getCurrentTime();
+	
+	var logItem = ['alert-danger',fullDateFormat,currentTime, str];
+	
+	logs.push(logItem);
+
+}
+
+function WARNING(str){
+
+	var fullDateFormat = getFullDateFormat();
+	var currentTime = getCurrentTime();
+	
+	var logItem = ['alert-warning',fullDateFormat,currentTime, str];
+	
+	logs.push(logItem);
+}
+
+function SUCCESS(str){
+	
+	var fullDateFormat = getFullDateFormat();
+	var currentTime = getCurrentTime();
+	
+	var logItem = ['alert-success',fullDateFormat,currentTime, str];
+	
+	logs.push(logItem);
+	
+	zog(logs);
+}
+
+function getFullDateFormat(){
+
+	var date = new Date();
+	var year = date.getFullYear();
+	var month = date.getMonth() + 1;
+	var day = date.getDate();
+	var hour = date.getHours();
+	var minutes = date.getMinutes();
+	var seconds = date.getSeconds();
+	var miliseconds = date.getMilliseconds();
+	
+	return '[' + year + '-' + month + '-' + day + ' ' + hour + ':' + minutes + ':' + seconds + '.' + miliseconds + ']';
+
+}
+
+function getCurrentTime(){
+	var date = new Date();
+	var hour = date.getHours();
+	var minutes = date.getMinutes();
+	var seconds = date.getSeconds();
+	var miliseconds = date.getMilliseconds();
+	
+	return hour + ':' + minutes + ':' + seconds + '.' + miliseconds;
+}
+
 function refreshSidebar(){
 
 	document.getElementById('sidebar').innerHTML = getActiveSettingsHtml();
+	
+	document.getElementById('logsShort').innerHTML = getShortLogsList();
 }
 </script>
 
@@ -1232,60 +1358,53 @@ function refreshSidebar(){
 		</div>
 		
 		<div id="mainbar" class="col-lg-2 mainbar">
-			<ul class="nav nav-pills nav-stacked left-menu">
-				<li>
-				  <button class="btn-mainbar-1 btn-block" type="button" data-target="#item1" data-toggle="collapse" data-parent="#stacked-menu">Cells<span style="padding-left: 15px;" class="fas fa-broadcast-tower"></span></button>
-				  <ul class="nav nav-stacked collapse left-submenu" id="item1">
-					<li onclick="getCellSettings(1)" class="btn-mainbar-2 btn-block">Cell 1</li>
-					<li onclick="getCellSettings(2)" class="btn-mainbar-2 btn-block">Cell 2</li>
-					<li onclick="getCellSettings(3)" class="btn-mainbar-2 btn-block">Cell 3</li>
-				  </ul>
-				</li>
-				<li>
-				  <button onclick="getUesListForDropDown()" class="btn-mainbar-1 btn-block" type="button" data-target="#uesDropdownList" data-toggle="collapse" data-parent="#stacked-menu">UEs<span style="padding-left: 15px;" class="fas fa-mobile-alt"></span></button>         
-				  <ul id="uesDropdownList" class="nav nav-pills nav-stacked collapse" id="item2">
-				  </ul>
-				</li>
-			</ul>
-			
-			<div id="alerts" class="row" style="margin-left:0px; margin-right:0px; position:absolute; bottom: 10px;">
-			
-			  <div class="alert alert-danger alert-dismissible fade in">
-				<a id="dimisAllert" data-dismiss="alert" ></a>
-				<strong>Danger!</strong> This alert box could indicate a dangerous or potentially negative action.
-			  </div>
-			
-			  <div class="alert alert-danger alert-dismissible fade in">
-				<a id="dimisAllert2" data-dismiss="alert" ></a>
-				<strong>Danger!</strong> This alert box could indicate a dangerous or potentially negative action.
-			  </div>
+			<div class="row" style="margin-left:0px; margin-right:0px;">
+				<ul class="nav nav-pills nav-stacked left-menu">
+					<li>
+					  <button class="btn-mainbar-1 btn-block" type="button" data-target="#item1" data-toggle="collapse" data-parent="#stacked-menu">Cells<span style="padding-left: 15px;" class="fas fa-broadcast-tower"></span></button>
+					  <ul class="nav nav-stacked collapse left-submenu" id="item1">
+						<li onclick="getCellSettings(1)" class="btn-mainbar-2 btn-block">Cell 1</li>
+						<li onclick="getCellSettings(2)" class="btn-mainbar-2 btn-block">Cell 2</li>
+						<li onclick="getCellSettings(3)" class="btn-mainbar-2 btn-block">Cell 3</li>
+					  </ul>
+					</li>
+					<li>
+					  <button onclick="getUesListForDropDown()" class="btn-mainbar-1 btn-block" type="button" data-target="#uesDropdownList" data-toggle="collapse" data-parent="#stacked-menu">UEs<span style="padding-left: 15px;" class="fas fa-mobile-alt"></span></button>         
+					  <ul id="uesDropdownList" class="nav nav-pills nav-stacked collapse" id="item2">
+					  </ul>
+					</li>
+				</ul>
+			</div>
+			<div id="logsShort" class="row" style="margin-left:0px; margin-right:0px; position:relative; top: 10px;">
 			  
-			  <div class="alert alert-danger alert-dismissible fade in">
-				<a id="dimisAllert2" data-dismiss="alert" ></a>
-				<strong>Danger!</strong> This alert box could indicate a dangerous or potentially negative action.
-			  </div>
-			  
-			  <div class="alert alert-danger alert-dismissible fade in">
-				<a id="dimisAllert" data-dismiss="alert" ></a>
-				<strong>Danger!</strong> This alert box could indicate a dangerous or potentially negative action.
-			  </div>
-			  
-			  <div class="alert alert-danger alert-dismissible fade in">
-				<a id="dimisAllert" data-dismiss="alert" ></a>
-				<strong>Danger!</strong> This alert box could indicate a dangerous or potentially negative action.
-			  </div>
-			  
-			  <div class="alert alert-danger alert-dismissible fade in">
-				<a id="dimisAllert" data-dismiss="alert" ></a>
-				<strong>Danger!</strong> This alert box could indicate a dangerous or potentially negative action.
-			  </div>
-			  
+			</div>			
+			<div class="row" style="margin-left:0px; margin-right:0px; position:relative; top: 2px;">
+				<button type="button" class="btn-mainbar-1 btn-block" data-toggle="modal" data-target="#modalAllLogs">Show all logs<span style="padding-left: 15px;" class="far fa-file-alt"></span></button>
 			</div>
 		</div>
 	</div>
 </div>
 
+<!-- Modal all loghs -->
+<div id="modalAllLogs" class="modal fade" role="dialog">
+  <div class="modal-dialog">
 
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Modal Header</h4>
+      </div>
+      <div class="modal-body">
+        <p>Some text in the modal.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
 
 </body>
 </html>
