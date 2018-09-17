@@ -13,6 +13,13 @@
 <script src="js/zim_7.3.2.js"></script>
 <!-- use zimjs.com/distill for minified individual functions! -->
 
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="assets/fontawesome/css/all.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+
 <style>
 
 	body {background-color:#ddd;}
@@ -123,6 +130,8 @@ var cellArray = new Array();
 var ueGuiContainer = new Container();
 var ueArray = new Array();
 var draggingObject = false;
+
+var queuingTime = 20000;
 
 var sidebarElements = new Array();
 var logs = new Array();
@@ -388,6 +397,36 @@ function UE(id, startPosX, startPosY, startCell){
 		this.startCell = startCell;
 	};
 	
+	this.startQueuingTime = function(){
+		
+	};
+	
+	this.updateQueuingTimer = function(){
+		
+		var timerGui = this.gui.getChildAt(3);
+		
+		var lastAngle = timerGui.angle;
+		
+		this.gui.removeChild(timerGui);
+		
+		var arc = new createjs.Shape();
+		
+		this.timerAngle++;
+	
+		var startAngle = (0 - 90)  * Math.PI/180;
+		var endAngle = (this.timerAngle-90) * Math.PI/180;
+			
+		arc.graphics.beginFill("red").arc(0, 0, 20, startAngle, endAngle, true).lineTo(0,0).closePath();
+		arc.x = 0;
+		arc.y = 100;
+		arc.angle = endAngle;
+		arc.alpha = .8;
+				
+		this.gui.addChild(arc);
+	}
+	
+	
+	
 		this.softHoAddition = function(cell){
 	
 		switch(this.connectionInfo()){
@@ -547,41 +586,6 @@ function UE(id, startPosX, startPosY, startCell){
 		// put your code here (you can delete this sample code)
 		
 		frame.loadAssets(["ue.png", "call.png", "transfer.png" ], "assets/");
-		 
-		/*var console = new Container()
-			.addTo(stage)
-			.pos(1500, 1000);
-			
-		var commandInput = new TextArea({color:"#AAA", height:30, size:15, placeholder:"enter command"})
-			.center(console);
-		
-		var buttonLabel = new Label({
-		   text:"Enter",
-		   size:20,
-		   color:"white",
-		});
-		
-		var button = new Button({
-		   label:buttonLabel,
-		   width:100,
-		   height:30,
-		   color:"gray",
-		   rollColor: "orange",
-		   corner:0
-		})
-		.addTo(console)
-		.pos(250, 0);
-			
-		var commandHistoryLabels = new Container()
-			.addTo(console)
-			.pos(10, -30);
-			
-		var commandHistoryArray = new Array();
-		var commandHistoryBackground = new Rectangle(350, 920, "white")
-			.addTo(console)
-			.pos(0,-930);
-			
-		commandHistoryBackground.alpha = 0.2;*/
 
 		frame.on("complete", function() {
 			
@@ -652,6 +656,17 @@ function UE(id, startPosX, startPosY, startCell){
 					refreshSidebar();
 				}
 			});
+			
+			interval(queuingTime/359, function(){
+					var angle = ue_1.timerAngle;
+					
+					zog(angle);
+					
+					if(angle < 359){
+						ue_1.updateQueuingTimer();
+					}
+			});
+			
 			stage.update(); // this is needed to show any changes
 		}); //end of complete 
 		
@@ -728,6 +743,7 @@ function guiAddUe(ue, stage){
 	
 	//UE label
 	var ue_Label = new Label("UE_id_" + ue.id, 15);
+
 	
 	//add label to gui container
 	ue.gui.addChild(ue_Label);
@@ -735,9 +751,26 @@ function guiAddUe(ue, stage){
 	ue_Label.top();
 	ue_Label.name = ue.id;
 	
+		
+	var arc = new createjs.Shape();
+	
+	ue.timerAngle = 0;
+	
+	var startAngle = (0 - 90)  * Math.PI/180;
+	var endAngle = (arc.angle-90) * Math.PI/180;
+	
+    arc.graphics.beginFill("red").arc(0, 0, 20, startAngle, endAngle, true).lineTo(0,0).closePath();
+    arc.x = 0;
+    arc.y = 100;
+	arc.alpha = 0.5;
+		
+    ue.gui.addChild(arc);
+    
+	
+	
+	
 	ue.gui.pos(ue.startPosX,ue.startPosY);
 	ue.gui.drag({currentTarget:true});
-	
 	ue.gui.setBounds(0,0);
 	ue.setStartCell(cellArray);
 }
@@ -1245,7 +1278,23 @@ function getShortLogsList(){
 		}
 	}
 	
-	zog(finalHtml);
+	return finalHtml;
+	
+}
+
+function getFullLogsList(){
+	
+	var finalHtml = '';
+	
+	if(logs.length == 0){
+		return "No logs collected";
+	}
+	
+	for( var i = 0; i < logs.length; i++){
+		
+		finalHtml += getAlertDiv(logs[i]);
+		
+	}
 	
 	return finalHtml;
 	
@@ -1300,8 +1349,6 @@ function SUCCESS(str){
 	var logItem = ['alert-success',fullDateFormat,currentTime, str];
 	
 	logs.push(logItem);
-	
-	zog(logs);
 }
 
 function getFullDateFormat(){
@@ -1334,14 +1381,20 @@ function refreshSidebar(){
 	document.getElementById('sidebar').innerHTML = getActiveSettingsHtml();
 	
 	document.getElementById('logsShort').innerHTML = getShortLogsList();
+	
 }
-</script>
 
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="assets/fontawesome/css/all.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+$(function(){
+  $('.custom-modal').click(function(e){
+    e.preventDefault();
+    var mymodal = $('#modalAllLogs');
+    mymodal.find('.modal-body').html(getFullLogsList());
+    mymodal.modal('show');
+    
+  });
+})
+
+</script>
 
 </head>
 
@@ -1379,7 +1432,7 @@ function refreshSidebar(){
 			  
 			</div>			
 			<div class="row" style="margin-left:0px; margin-right:0px; position:relative; top: 2px;">
-				<button type="button" class="btn-mainbar-1 btn-block" data-toggle="modal" data-target="#modalAllLogs">Show all logs<span style="padding-left: 15px;" class="far fa-file-alt"></span></button>
+				<button type="button" class="btn-mainbar-1 btn-block custom-modal" >Show all logs<span style="padding-left: 15px;" class="far fa-file-alt"></span></button>
 			</div>
 		</div>
 	</div>
@@ -1393,10 +1446,9 @@ function refreshSidebar(){
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal">&times;</button>
-        <h4 class="modal-title">Modal Header</h4>
+        <h4 class="modal-title">Logs</h4>
       </div>
       <div class="modal-body">
-        <p>Some text in the modal.</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
