@@ -18,6 +18,8 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <script src="js/timer.js"></script>
+  
 
 
 <style>
@@ -131,7 +133,7 @@ var ueGuiContainer = new Container();
 var ueArray = new Array();
 var draggingObject = false;
 
-var queuingTime = 20000;
+var queuingTime = 9090;
 
 var sidebarElements = new Array();
 var logs = new Array();
@@ -187,6 +189,8 @@ function Cell(id, resources, startPosX, startPosY) {
 
 function UE(id, startPosX, startPosY, startCell){
 
+	var self = this;
+	
 	this.id = id;
 	this.terminatingUe = undefined;
 	this.startCell = startCell;
@@ -194,8 +198,10 @@ function UE(id, startPosX, startPosY, startCell){
     this.startPosY = startPosY;
 	this.speechPriority = 1;
 	this.psPriority = 5;
+	
 	this.psconnection = false;
 	this.csconnection = false;
+	this.queueingTimer = new Timer(queuingTime, self);
 	this.connectionInfo = function(){
 		if(this.psconnection && this.csconnection)
 		{
@@ -357,8 +363,7 @@ function UE(id, startPosX, startPosY, startCell){
 		refreshSidebar();
 	}
 	
-	this.getInfo = function()
-	{
+	this.getInfo = function(){
 		return 'UE(id: ' + this.id + ', startCell: ' + this.startCell + ', activeSet = [' + this.activeSet.toString() + ']' + ', connection: ' +  this.connectionInfo() + ', cellsInRange = [' + this.cellsInRange.toString() + ']' + ')';
 	};
 	
@@ -377,8 +382,8 @@ function UE(id, startPosX, startPosY, startCell){
 		return string;
 	}
 	
-	this.setStartCell = function(cells)
-	{
+	this.setStartCell = function(cells){
+	
 		var noOfCells = cells.length;
 		var distance = 9999;
 		var startCell = undefined;
@@ -397,32 +402,32 @@ function UE(id, startPosX, startPosY, startCell){
 		this.startCell = startCell;
 	};
 	
-	this.startQueuingTime = function(){
+	this.startQueueingTime = function(){
+		
+		zog("start timer for ue " + this.id);
+		
+		
+		self.queueingTimer.startTimer();
 		
 	};
 	
-	this.updateQueuingTimer = function(){
-		
-		var timerGui = this.gui.getChildAt(3);
-		
-		var lastAngle = timerGui.angle;
-		
-		this.gui.removeChild(timerGui);
-		
-		var arc = new createjs.Shape();
-		
-		this.timerAngle++;
+	this.stopQueueingTime = function(){
+		self.queueingTimer.stopTimer();
+	};
 	
-		var startAngle = (0 - 90)  * Math.PI/180;
-		var endAngle = (this.timerAngle-90) * Math.PI/180;
-			
-		arc.graphics.beginFill("red").arc(0, 0, 20, startAngle, endAngle, true).lineTo(0,0).closePath();
-		arc.x = 0;
-		arc.y = 100;
-		arc.angle = endAngle;
-		arc.alpha = .8;
-				
-		this.gui.addChild(arc);
+	this.updateQueuingTimer = function(){
+	
+		zog("updateQueuingTimer");
+		
+		var time = self.gui.getChildAt(3).getChildAt(1);
+		
+		time.text = self.queueingTimer.getCurrentTimeString();
+		
+		/*var cqTimeTimer = new Label(self.queueingTimer.getCurrentTimeString(), 20, "arial", "red");
+	
+		//add label to gui container
+		cqTimerGui.addChild(cqTimeTimer);
+		cqTimeTimer.pos(-27,20);*/
 	}
 	
 	
@@ -657,16 +662,6 @@ function UE(id, startPosX, startPosY, startCell){
 				}
 			});
 			
-			interval(queuingTime/359, function(){
-					var angle = ue_1.timerAngle;
-					
-					zog(angle);
-					
-					if(angle < 359){
-						ue_1.updateQueuingTimer();
-					}
-			});
-			
 			stage.update(); // this is needed to show any changes
 		}); //end of complete 
 		
@@ -712,22 +707,22 @@ function guiAddUe(ue, stage){
 	//create gui for whole UE interface
 	ue.gui = new Container().addTo(ueGuiContainer);
 	
-	ue_gui_icons = new Container().addTo(ue.gui);
+	ue_gui_icons = new Container().addTo(ue.gui); // id 0
 	ue_gui_icons.name = 'gui_icons_ue' + ue.id;
 	//UE graphic
 	var phonePNG = frame.asset("ue.png").clone();
 	var callPNG = frame.asset("call.png").clone();
 	var transferPNG = frame.asset("transfer.png").clone();
 	
-	phonePNG
+	phonePNG //id 1
 		.sca(0.5)
-		.addTo(ue.gui)
+		.addTo(ue.gui) 
 		.centerReg();
 	phonePNG.name = ue.id;
 		
 	callPNG
 		.sca(0.15)
-		.addTo(ue_gui_icons)
+		.addTo(ue_gui_icons) 
 		.centerReg()
 		.pos(25,-100)
 		.alp(0);
@@ -746,28 +741,28 @@ function guiAddUe(ue, stage){
 
 	
 	//add label to gui container
-	ue.gui.addChild(ue_Label);
-	ue_Label.pos(-25,-5);
+	ue.gui.addChild(ue_Label); // id 2
+	ue_Label.pos(-25,-30);
 	ue_Label.top();
 	ue_Label.name = ue.id;
 	
-		
-	var arc = new createjs.Shape();
+	var queueingTimerGui = new Container().addTo(ue.gui); //id 3
+	queueingTimerGui.name = 'gui_cqTimer_ue' + ue.id;
+	queueingTimerGui.alp(0);
 	
-	ue.timerAngle = 0;
+			
+	var cqTimeLabel = new Label("CQTimer", 15, "arial", "red");
+	cqTimeLabel.name = 'cqTimeLabel_ue' + ue.id;
 	
-	var startAngle = (0 - 90)  * Math.PI/180;
-	var endAngle = (arc.angle-90) * Math.PI/180;
+	//add label for cqTimer
+	queueingTimerGui.addChild(cqTimeLabel);
+	cqTimeLabel.pos(-29,-0);
 	
-    arc.graphics.beginFill("red").arc(0, 0, 20, startAngle, endAngle, true).lineTo(0,0).closePath();
-    arc.x = 0;
-    arc.y = 100;
-	arc.alpha = 0.5;
-		
-    ue.gui.addChild(arc);
-    
-	
-	
+	var cqTimeTimer = new Label("", 20, "arial", "red");
+	cqTimeTimer.name = 'cqTimeTimer_ue' + ue.id;
+	//add label to gui container
+	queueingTimerGui.addChild(cqTimeTimer);
+	cqTimeTimer.pos(-27,20);
 	
 	ue.gui.pos(ue.startPosX,ue.startPosY);
 	ue.gui.drag({currentTarget:true});
@@ -1394,6 +1389,17 @@ $(function(){
   });
 })
 
+
+//testing
+
+function startQueueingTimeUE1(){
+	getUeById(1).startQueueingTime();
+}
+
+function stopQueueingTimeUE1(){
+	getUeById(1).stopQueueingTime();
+}
+
 </script>
 
 </head>
@@ -1433,6 +1439,10 @@ $(function(){
 			</div>			
 			<div class="row" style="margin-left:0px; margin-right:0px; position:relative; top: 2px;">
 				<button type="button" class="btn-mainbar-1 btn-block custom-modal" >Show all logs<span style="padding-left: 15px;" class="far fa-file-alt"></span></button>
+			</div>
+			<div class="row" style="margin-left:0px; margin-right:0px; position:relative; top: 2px;">
+				<button onclick="startQueueingTimeUE1();" type="button" class="btn-mainbar-1 btn-block" >startQueueingTime</button>
+				<button onclick="stopQueueingTimeUE1();" type="button" class="btn-mainbar-1 btn-block" >stopQueueingTime</button>
 			</div>
 		</div>
 	</div>
