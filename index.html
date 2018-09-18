@@ -18,6 +18,9 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <script src="js/const.js"></script>
+  <script src="js/logs.js"></script>
+  <script src="js/queue.js"></script>
   <script src="js/timer.js"></script>
   
 
@@ -136,15 +139,6 @@ var draggingObject = false;
 var queuingTime = 9090;
 
 var sidebarElements = new Array();
-var logs = new Array();
-
-
-const connectionType = {
-    EULHS: 'int_eul_hs',
-    SPEECH: 'speech_12_2',
-    SPEECHEULHS: 'int_eul_hs_speech_12_2',
-}
-
 
 function Cell(id, resources, startPosX, startPosY) {
   this.id = id;
@@ -157,29 +151,31 @@ function Cell(id, resources, startPosX, startPosY) {
   this.startPosX = startPosX;
   this.startPosY = startPosY;
   
+  this.admissionQueue = new Queue();
+  
   this.getInfo = function() 
   {
 	return 'cell_id: ' + this.id + ', resources: ' + this.resources; 
   };
   
-  this.admissionReq = function(connType){
+  this.admissionReq = function(ueId,prio,connType){
   
 	switch(connType)
 	{
 		case connectionType.EULHS:
 			if(this.eulHsUsersCount < this.hsAdmUsers){
-				return true;
+				return [true, false];
 			}else{
-				zog("admission reject cell: " + this.id);
-				return false;
+				var queued = this.admissionQueue.addToQueue(ueId,prio,connType);
+				return [false, queued];
 			}
 		break;
 		case connectionType.SPEECH:
 			if(this.speechUsersCount < this.speechAdmUsers){
-				return true;
+				return [true, false];
 			}else{
 				zog("admission reject cell: " + this.id);
-				return false;
+				return [false, false]; // TODO add to queue for speech
 			}
 		break;
 		default:
@@ -228,7 +224,10 @@ function UE(id, startPosX, startPosY, startCell){
 			
 			for(var i = 0; i < this.activeSet.length; i++)
 			{
-				if(!getCellById(this.activeSet[i]).admissionReq(connectionType.EULHS)){
+				
+				var requestResult = getCellById(this.startCell).admissionReq(this.id,this.psPriority,connectionType.EULHS);
+				
+				if(!requestResult[0]){
 					DANGER('EULHS was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.activeSetToString());
 					refreshSidebar();
 					return;
@@ -240,8 +239,18 @@ function UE(id, startPosX, startPosY, startCell){
 		else
 		{
 			zog(this.startCell);
-			if(!getCellById(this.startCell).admissionReq(connectionType.EULHS)){
+			
+			var requestResult = getCellById(this.startCell).admissionReq(this.id,this.psPriority,connectionType.EULHS);
+			
+			if(!requestResult[0]){
 				DANGER('EULHS was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.startCell);
+				
+				zog("queued: " + requestResult[1]);
+				
+				if(requestResult[1]){
+					this.startQueueingTime();
+				}
+				
 				refreshSidebar();
 				return;
 			}
@@ -253,6 +262,7 @@ function UE(id, startPosX, startPosY, startCell){
 		this.updateActiveSet(cellArray);
 		
 		if(this.psconnection){
+		
 			for(var i = 0; i < this.activeSet.length; i++){
 				getCellById(this.activeSet[i]).eulHsUsersCount++;
 			}
@@ -262,9 +272,6 @@ function UE(id, startPosX, startPosY, startCell){
 			SUCCESS('EULHS established for UE: ' + this.id + ', ActiveSet = ' + this.activeSetToString());
 			
 		}
-		
-		
-		
 		refreshSidebar();
 	}
 	
@@ -293,7 +300,9 @@ function UE(id, startPosX, startPosY, startCell){
 		{
 			for(var i = 0; i < this.activeSet.length; i++)
 			{
-				if(!getCellById(this.activeSet[i]).admissionReq(connectionType.SPEECH)){
+				var requestResult = getCellById(this.activeSet[i]).admissionReq(this.id, this.speechPriority, connectionType.SPEECH);
+
+				if(!requestResult[0]){
 					DANGER('Speech was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.startCell);
 					refreshSidebar();
 					return false;
@@ -303,7 +312,9 @@ function UE(id, startPosX, startPosY, startCell){
 		}
 		else
 		{
-			if(!getCellById(this.startCell).admissionReq(connectionType.SPEECH)){
+			var requestResult = getCellById(this.startCell).admissionReq(this.id, this.speechPriority, connectionType.SPEECH);
+		
+			if(!requestResult[0]){
 					DANGER('Speech was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.startCell);
 					refreshSidebar();
 					return false;
@@ -403,10 +414,7 @@ function UE(id, startPosX, startPosY, startCell){
 	};
 	
 	this.startQueueingTime = function(){
-		
-		zog("start timer for ue " + this.id);
-		
-		
+	
 		self.queueingTimer.startTimer();
 		
 	};
@@ -422,12 +430,6 @@ function UE(id, startPosX, startPosY, startCell){
 		var time = self.gui.getChildAt(3).getChildAt(1);
 		
 		time.text = self.queueingTimer.getCurrentTimeString();
-		
-		/*var cqTimeTimer = new Label(self.queueingTimer.getCurrentTimeString(), 20, "arial", "red");
-	
-		//add label to gui container
-		cqTimerGui.addChild(cqTimeTimer);
-		cqTimeTimer.pos(-27,20);*/
 	}
 	
 	
@@ -770,105 +772,6 @@ function guiAddUe(ue, stage){
 	ue.setStartCell(cellArray);
 }
 
-function submitCommand(commandInput, commandHistoryArray, commandHistoryLabels){
-	
-	var command = commandInput.text.trim();
-	
-	if (command == "") return;
-	
-	commandOutput = command + ' - ' + checkCommand(command);
-	
-	commandHistoryArray.push(commandOutput);
-	
-	if(commandHistoryArray.length > 45)
-	{
-		commandHistoryArray.shift();
-	}
-	
-	commandHistoryLabels.removeAllChildren();
-	
-	var j = 0;
-	for(var i = commandHistoryArray.length-1; i >=0 ; i--)
-	{
-		var commandLabel = new Label({
-		   text:commandHistoryArray[i],
-		   size:15,
-		   color:"white",
-		})
-		.addTo(commandHistoryLabels)
-		.center();
-		
-		commandLabel.pos(0, j * (-20));
-		j++;
-	}
-	
-	commandInput.text = "";
-}
-
-function checkCommand(command){
-
-	var commandItems = command.split(" ");
-	
-	if(commandItems[0] == "cell")
-	{
-		//setup cell
-		if(getCellById(commandItems[1]) != undefined)
-		{
-			if(commandItems[2] == 'psresources')
-			{
-				if (!isNaN(parseInt(commandItems[3], 10))) {
-					getCellById(commandItems[1]).psresources = parseInt(commandItems[3], 10);
-					return 'EXECUTED';
-				} 
-				return 'resource value is not a number';
-			}
-			
-			if(commandItems[2] == 'csresources')
-			{
-				if (!isNaN(parseInt(commandItems[3], 10))) {
-					getCellById(commandItems[1]).csresources = parseInt(commandItems[3], 10);
-					return 'EXECUTED';
-				} 
-				return 'resource value is not a number';
-			}
-			
-			return 'unknown cell parameter';
-		}
-		return 'cell with id: ' + commandItems[1] + ' does not exist';
-	}
-	else if(commandItems[0] == "ue")
-	{
-		if(getUeById(commandItems[1]) != undefined)
-		{
-			if(commandItems[2] == 'start_ps')
-			{
-					getUeById(commandItems[1]).startPsConnection()
-					return 'EXECUTED';
-			}
-			else if(commandItems[2] == 'stop_ps')
-			{
-					getUeById(commandItems[1]).stopPsConnection()
-					return 'EXECUTED';
-			}
-			if(commandItems[2] == 'start_cs')
-			{
-					getUeById(commandItems[1]).startCsConnection()
-					return 'EXECUTED';
-			}
-			else if(commandItems[2] == 'stop_cs')
-			{
-					getUeById(commandItems[1]).stopCsConnection()
-					return 'EXECUTED';
-			}
-			
-			
-			return 'unknown ue parameter';
-		}
-		return 'ue with id: ' + commandItems[1] + ' does not exist';
-	}
-	
-	return 'unknown command';
-}
 
 function getCellById(id){
 	var noOfCells = cellArray.length;
@@ -1255,149 +1158,17 @@ function getTerminatingUesList(id){
 	
 }
 
-function getShortLogsList(){
-	
-	var finalHtml = '';
-	
-	if(logs.length == 0){
-		return finalHtml;
-	}
-	
-	if(logs.length > 6){
-		for( var i = logs.length - 6; i < logs.length; i++){
-			finalHtml += getAlertDiv(logs[i]);
-		}
-	}else{
-		for( var i = 0; i < logs.length; i++){
-			finalHtml += getAlertDiv(logs[i]);
-		}
-	}
-	
-	return finalHtml;
-	
-}
 
-function getFullLogsList(){
-	
-	var finalHtml = '';
-	
-	if(logs.length == 0){
-		return "No logs collected";
-	}
-	
-	for( var i = 0; i < logs.length; i++){
-		
-		finalHtml += getAlertDiv(logs[i]);
-		
-	}
-	
-	return finalHtml;
-	
-}
-
-function getAlertDiv(logItem){
-
-var logType = '<div class="alert ' + logItem[0] + '">';
-
-var text ='<strong>' + logItem[2] + '</strong> ' + logItem[3]; 
-		
-return 	logType + text + '</div>';
-
-}
-
-function INFO(str){
-
-	var fullDateFormat = getFullDateFormat();
-	var currentTime = getCurrentTime();
-	
-	var logItem = ['alert-info',fullDateFormat,currentTime, str];
-	
-	logs.push(logItem);
-}
-
-function DANGER(str){
-
-	var fullDateFormat = getFullDateFormat();
-	var currentTime = getCurrentTime();
-	
-	var logItem = ['alert-danger',fullDateFormat,currentTime, str];
-	
-	logs.push(logItem);
-
-}
-
-function WARNING(str){
-
-	var fullDateFormat = getFullDateFormat();
-	var currentTime = getCurrentTime();
-	
-	var logItem = ['alert-warning',fullDateFormat,currentTime, str];
-	
-	logs.push(logItem);
-}
-
-function SUCCESS(str){
-	
-	var fullDateFormat = getFullDateFormat();
-	var currentTime = getCurrentTime();
-	
-	var logItem = ['alert-success',fullDateFormat,currentTime, str];
-	
-	logs.push(logItem);
-}
-
-function getFullDateFormat(){
-
-	var date = new Date();
-	var year = date.getFullYear();
-	var month = date.getMonth() + 1;
-	var day = date.getDate();
-	var hour = date.getHours();
-	var minutes = date.getMinutes();
-	var seconds = date.getSeconds();
-	var miliseconds = date.getMilliseconds();
-	
-	return '[' + year + '-' + month + '-' + day + ' ' + hour + ':' + minutes + ':' + seconds + '.' + miliseconds + ']';
-
-}
-
-function getCurrentTime(){
-	var date = new Date();
-	var hour = date.getHours();
-	var minutes = date.getMinutes();
-	var seconds = date.getSeconds();
-	var miliseconds = date.getMilliseconds();
-	
-	return hour + ':' + minutes + ':' + seconds + '.' + miliseconds;
-}
-
-function refreshSidebar(){
-
-	document.getElementById('sidebar').innerHTML = getActiveSettingsHtml();
-	
-	document.getElementById('logsShort').innerHTML = getShortLogsList();
-	
-}
-
-$(function(){
-  $('.custom-modal').click(function(e){
-    e.preventDefault();
-    var mymodal = $('#modalAllLogs');
-    mymodal.find('.modal-body').html(getFullLogsList());
-    mymodal.modal('show');
-    
-  });
-})
 
 
 //testing
 
 function startQueueingTimeUE1(){
-	getUeById(1).startQueueingTime();
+	getUeById(3).startQueueingTime();
 }
 
 function stopQueueingTimeUE1(){
-	getUeById(1).stopQueueingTime();
+	getUeById(3).stopQueueingTime();
 }
 
 </script>
