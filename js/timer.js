@@ -1,8 +1,10 @@
-function Timer(queueingTime, ue){
+function Timer(queueingTime, ue, timerType){
 	
 	var self = this;
 	
 	self.ue = ue;
+	
+	self.timerType = timerType;
 	
 	self.queueingTime = queueingTime;
 	self.running = false;
@@ -22,15 +24,30 @@ function Timer(queueingTime, ue){
 			self.startTime = d.getTime();
 			
 			
-			zog("start timer: " + self.startTime);
+			zog("start timer for " + self.timerType);
 			
-			self.ue.gui.getChildAt(3).animate({obj:{alpha:1}, time:200});
+			if(self.timerType == "ps"){
 			
-			self.ue.updateQueuingTimer();
+				self.ue.updatePsQueuingTimer();
+				zog("start animation for ps");
+				
+				self.ue.gui.getChildAt(1).animate({obj:{alpha:1, x:80}, time:200});
+				
+				
+				self.clockTick = setInterval(function(){ self.ue.updatePsQueuingTimer(); }, 1000);
+				
+			}else{
+				
+				zog("start animation for speech");
+				self.ue.updateSpeechQueuingTimer();
+				
+			    self.ue.gui.getChildAt(2).animate({obj:{alpha:1, x:80}, time:200});
 			
-			clockTick = setInterval(function(){ self.ue.updateQueuingTimer(); }, 1000); 
+				self.clockTick = setInterval(function(){ self.ue.updateSpeechQueuingTimer(); }, 1000); 
+				
+			}
 			
-			timeout = setTimeout(function(){ zog("timeout"); self.stopTimer(); }, self.queueingTime);
+			self.timeout = setTimeout(function(){ zog("timeout"); self.stopTimer(); }, self.queueingTime);
 		}
 	}
 	
@@ -48,11 +65,21 @@ function Timer(queueingTime, ue){
 			
 			var diff = self.stopTime - self.startTime;
 			
-			self.ue.updateQueuingTimer();
 			
-			self.ue.gui.getChildAt(3).animate({obj:{alpha:0}, time:500, wait:2000});
 			
-			clearInterval(clockTick)
+			if(self.timerType == "ps"){
+				
+				self.ue.updatePsQueuingTimer();
+				
+				self.ue.gui.getChildAt(1).animate({obj:{alpha:0, x:30}, time:200,  wait: 2000});
+			}else{
+				
+				self.ue.updateSpeechQueuingTimer();
+				
+			    self.ue.gui.getChildAt(2).animate({obj:{alpha:0, x:30}, time:200, wait: 2000});
+			}
+			
+			clearInterval(self.clockTick)
 			
 			clearTimeout(self.timeout);
 		}

@@ -197,7 +197,9 @@ function UE(id, startPosX, startPosY, startCell){
 	
 	this.psconnection = false;
 	this.csconnection = false;
-	this.queueingTimer = new Timer(queuingTime, self);
+	this.psQueueingTimer = new Timer(queuingTime, self, 'ps');
+	this.speechQueueingTimer = new Timer(queuingTime, self, 'speech');
+	
 	this.connectionInfo = function(){
 		if(this.psconnection && this.csconnection)
 		{
@@ -225,7 +227,7 @@ function UE(id, startPosX, startPosY, startCell){
 			for(var i = 0; i < this.activeSet.length; i++)
 			{
 				
-				var requestResult = getCellById(this.startCell).admissionReq(this.id,this.psPriority,connectionType.EULHS);
+				var requestResult = getCellById(this.activeSet[i].cellId).admissionReq(this.id,this.psPriority,connectionType.EULHS);
 				
 				if(!requestResult[0]){
 					DANGER('EULHS was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.activeSetToString());
@@ -248,13 +250,13 @@ function UE(id, startPosX, startPosY, startCell){
 				zog("queued: " + requestResult[1]);
 				
 				if(requestResult[1]){
-					this.startQueueingTime();
+					this.startPsQueueingTime();
 				}
 				
 				refreshSidebar();
 				return;
 			}
-			this.activeSet.push(this.startCell);
+			this.activeSet.push({cellId:this.startCell, isSpeechQueued: false, isPsQueued: false});
 			this.psconnection = true;
 		}
 		
@@ -264,7 +266,7 @@ function UE(id, startPosX, startPosY, startCell){
 		if(this.psconnection){
 		
 			for(var i = 0; i < this.activeSet.length; i++){
-				getCellById(this.activeSet[i]).eulHsUsersCount++;
+				getCellById(this.activeSet[i].cellId).eulHsUsersCount++;
 			}
 			
 			this.gui.getChildAt(0).getChildAt(1).animate({obj:{alpha:1}, time:500});
@@ -281,7 +283,7 @@ function UE(id, startPosX, startPosY, startCell){
 		
 		for(var i = 0; i < this.activeSet.length; i++)
 		{
-			getCellById(this.activeSet[i]).eulHsUsersCount--;
+			getCellById(this.activeSet[i].cellId).eulHsUsersCount--;
 		}
 		
 		this.setCellsInRange();
@@ -300,7 +302,7 @@ function UE(id, startPosX, startPosY, startCell){
 		{
 			for(var i = 0; i < this.activeSet.length; i++)
 			{
-				var requestResult = getCellById(this.activeSet[i]).admissionReq(this.id, this.speechPriority, connectionType.SPEECH);
+				var requestResult = getCellById(this.activeSet[i].cellId).admissionReq(this.id, this.speechPriority, connectionType.SPEECH);
 
 				if(!requestResult[0]){
 					DANGER('Speech was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.startCell);
@@ -319,7 +321,7 @@ function UE(id, startPosX, startPosY, startCell){
 					refreshSidebar();
 					return false;
 			}
-			this.activeSet.push(this.startCell);
+			this.activeSet.push({cellId:this.startCell, isSpeechQueued: false, isPsQueued: false});
 			this.csconnection = true;
 		}
 		
@@ -328,7 +330,7 @@ function UE(id, startPosX, startPosY, startCell){
 		
 		if(this.csconnection){
 			for(var i = 0; i < this.activeSet.length; i++){
-				getCellById(this.activeSet[i]).speechUsersCount++;
+				getCellById(this.activeSet[i].cellId).speechUsersCount++;
 			}
 			
 			this.gui.getChildAt(0).getChildAt(0).animate({obj:{alpha:1}, time:500});
@@ -353,7 +355,7 @@ function UE(id, startPosX, startPosY, startCell){
 		if(this.csconnection){
 			for(var i = 0; i < this.activeSet.length; i++)
 			{
-				getCellById(this.activeSet[i]).speechUsersCount--;
+				getCellById(this.activeSet[i].cellId).speechUsersCount--;
 			}
 			
 			this.csconnection = false;
@@ -375,13 +377,13 @@ function UE(id, startPosX, startPosY, startCell){
 	}
 	
 	this.getInfo = function(){
-		return 'UE(id: ' + this.id + ', startCell: ' + this.startCell + ', activeSet = [' + this.activeSet.toString() + ']' + ', connection: ' +  this.connectionInfo() + ', cellsInRange = [' + this.cellsInRange.toString() + ']' + ')';
+		return 'UE(id: ' + this.id + ', startCell: ' + this.startCell + ', activeSet = ' + this.activeSetToString() + ', connection: ' +  this.connectionInfo() + ', cellsInRange = [' + this.cellsInRange.toString() + ']' + ')';
 	};
 	
 	this.activeSetToString = function(){
 		var string = '[';
 		for(var i = 0; i < this.activeSet.length; i++){
-			string = string + 'Cell_' + this.activeSet[i];
+			string = string + 'Cell_' + this.activeSet[i].cellId;
 			
 			if( i+1 < this.activeSet.length){
 				string = string + ',';
@@ -413,28 +415,52 @@ function UE(id, startPosX, startPosY, startCell){
 		this.startCell = startCell;
 	};
 	
-	this.startQueueingTime = function(){
+	this.startPsQueueingTime = function(){
 	
-		self.queueingTimer.startTimer();
+		self.psQueueingTimer.startTimer();
 		
 	};
 	
-	this.stopQueueingTime = function(){
-		self.queueingTimer.stopTimer();
+	this.stopPsQueueingTime = function(){
+		self.psQueueingTimer.stopTimer();
 	};
 	
-	this.updateQueuingTimer = function(){
+	this.updatePsQueuingTimer = function(){
 	
 		zog("updateQueuingTimer");
 		
-		var time = self.gui.getChildAt(3).getChildAt(1);
+		var time = self.gui.getChildAt(1).getChildAt(3);
 		
-		time.text = self.queueingTimer.getCurrentTimeString();
+		time.text = self.psQueueingTimer.getCurrentTimeString();
+	}
+	
+		this.startPsQueueingTime = function(){
+	
+		self.psQueueingTimer.startTimer();
+		
+	};
+	
+	this.startSpeechQueueingTime = function(){
+	
+		zog("startSpeechQueueingTime");
+		self.speechQueueingTimer.startTimer();
+		
+	};
+	
+	this.stopSpeechQueueingTime = function(){
+		self.speechQueueingTimer.stopTimer();
+	};
+	
+	this.updateSpeechQueuingTimer = function(){
+		
+		var time = self.gui.getChildAt(2).getChildAt(3);
+		
+		time.text = self.speechQueueingTimer.getCurrentTimeString();
 	}
 	
 	
 	
-		this.softHoAddition = function(cell){
+	this.softHoAddition = function(cell){
 	
 		switch(this.connectionInfo()){
 			case connectionType.EULHS: 
@@ -507,7 +533,7 @@ function UE(id, startPosX, startPosY, startCell){
 
 				
 				for(var j = 0; j < this.activeSet.length; j++){
-					if(this.cellsInRange[i] == this.activeSet[j]){
+					if(this.cellsInRange[i] == this.activeSet[j].cellId){
 						alreadyInAs = true;
 					}					
 				}
@@ -518,7 +544,7 @@ function UE(id, startPosX, startPosY, startCell){
 					if(this.id == 1)
 						zog('now add to AS');
 					if(this.softHoAddition(this.cellsInRange[i])){
-						this.activeSet.push(this.cellsInRange[i]);
+						this.activeSet.push({cellId:this.cellsInRange[i], isSpeechQueued: false, isPsQueued: false});
 					}
 				}
 			}
@@ -528,13 +554,13 @@ function UE(id, startPosX, startPosY, startCell){
 				var inRange = false;
 				
 				for(var j = 0; j < this.cellsInRange.length; j++){
-					if(this.activeSet[i] == this.cellsInRange[j]){
+					if(this.activeSet[i].cellId == this.cellsInRange[j]){
 						inRange = true;
 					}					
 				}
 				
 				if(!inRange){
-					if(this.softHoDeletion(this.activeSet[i])){
+					if(this.softHoDeletion(this.activeSet[i].cellId)){
 						
 						this.activeSet.splice(i,1);
 						i--;
@@ -550,12 +576,16 @@ function UE(id, startPosX, startPosY, startCell){
 	this.getActiveSetIndexFromCellId = function(id)
 	{
 		for(var i = 0; i < this.activeSet.length; i++){
-			if(this.activeSet[i] == id)
+			if(this.activeSet[i].cellId == id)
 			{
 				return i;
 			}
 		}
 		return -1;
+	}
+	
+	this.deleteFromQueue = function(){
+		
 	}
 }
 
@@ -711,12 +741,24 @@ function guiAddUe(ue, stage){
 	
 	ue_gui_icons = new Container().addTo(ue.gui); // id 0
 	ue_gui_icons.name = 'gui_icons_ue' + ue.id;
+	
+	//queueing timers 	
+	var psQueueingTimerGui = new Container().addTo(ue.gui); //id 1
+	psQueueingTimerGui.name = 'gui_psQueueingTimerGui_ue' + ue.id;
+	psQueueingTimerGui.alp(0);
+	psQueueingTimerGui.pos(30,-70);
+	
+	var speechQueueingTimerGui = new Container().addTo(ue.gui); //id 2
+	speechQueueingTimerGui.name = 'gui_speechQueueingTimerGui_ue' + ue.id;
+	speechQueueingTimerGui.alp(0);
+	speechQueueingTimerGui.pos(30,5);
+	
 	//UE graphic
 	var phonePNG = frame.asset("ue.png").clone();
 	var callPNG = frame.asset("call.png").clone();
 	var transferPNG = frame.asset("transfer.png").clone();
 	
-	phonePNG //id 1
+	phonePNG //id 3
 		.sca(0.5)
 		.addTo(ue.gui) 
 		.centerReg();
@@ -743,29 +785,57 @@ function guiAddUe(ue, stage){
 
 	
 	//add label to gui container
-	ue.gui.addChild(ue_Label); // id 2
+	ue.gui.addChild(ue_Label); // id 4
 	ue_Label.pos(-25,-30);
 	ue_Label.top();
 	ue_Label.name = ue.id;
 	
-	var queueingTimerGui = new Container().addTo(ue.gui); //id 3
-	queueingTimerGui.name = 'gui_cqTimer_ue' + ue.id;
-	queueingTimerGui.alp(0);
+	//psQueueingTimerGui content
 	
-			
-	var cqTimeLabel = new Label("CQTimer", 15, "arial", "red");
-	cqTimeLabel.name = 'cqTimeLabel_ue' + ue.id;
+		
+		var backgroundPsCqTimer = new Rectangle(150, 65, "#1767b9", "#1767b9", 5, 20)
+		.addTo(psQueueingTimerGui)
+		.pos(-70, 0);
+		backgroundPsCqTimer.name = 'backgroundPsCqTimer_ue' + ue.id;
 	
-	//add label for cqTimer
-	queueingTimerGui.addChild(cqTimeLabel);
-	cqTimeLabel.pos(-29,-0);
+		var psCqTimerLabel_1 = new Label("PS", 15, "arial", "black");
+		psCqTimerLabel_1.name = 'psCqTimeLabel1_ue' + ue.id;
+		psQueueingTimerGui.addChild(psCqTimerLabel_1);
+		psCqTimerLabel_1.pos(-29,5);
+		
+		var psCqTimerLabel_2 = new Label("queueing timer", 15, "arial", "black");
+		psCqTimerLabel_2.name = 'psCqTimeLabel2_ue' + ue.id;
+		psQueueingTimerGui.addChild(psCqTimerLabel_2);
+		psCqTimerLabel_2.pos(-29,20);
+		
+		var psCqTime = new Label("", 20, "arial", "black");
+		psCqTime.name = 'psCqTime_ue' + ue.id;
+		//add label to gui container
+		psQueueingTimerGui.addChild(psCqTime);
+		psCqTime.pos(-27,40);
 	
-	var cqTimeTimer = new Label("", 20, "arial", "red");
-	cqTimeTimer.name = 'cqTimeTimer_ue' + ue.id;
-	//add label to gui container
-	queueingTimerGui.addChild(cqTimeTimer);
-	cqTimeTimer.pos(-27,20);
+	//speechQueueingTimerGui content
+		var backgroundSpeechCqTimer = new Rectangle(150, 65, "#198600", "#198600", 5, 20)
+		.addTo(speechQueueingTimerGui)
+		.pos(-70, 0);
+		backgroundSpeechCqTimer.name = 'backgroundSpeechCqTimer_ue' + ue.id;
 	
+		var speechCqTimerLabel_1 = new Label("SPEECH", 15, "arial", "black");
+		speechCqTimerLabel_1.name = 'speechCqTimerLabel1_ue' + ue.id;
+		speechQueueingTimerGui.addChild(speechCqTimerLabel_1);
+		speechCqTimerLabel_1.pos(-29,5);
+		
+		var speechCqTimerLabel_2 = new Label("queueing timer", 15, "arial", "black");
+		speechCqTimerLabel_2.name = 'speechCqTimerLabel2_ue' + ue.id;
+		speechQueueingTimerGui.addChild(speechCqTimerLabel_2);
+		speechCqTimerLabel_2.pos(-29,20);
+		
+		var speechCqTime = new Label("", 20, "arial", "black");
+		speechCqTime.name = 'speechCqTime_ue' + ue.id;
+		//add label to gui container
+		speechQueueingTimerGui.addChild(speechCqTime);
+		speechCqTime.pos(-27,40);
+		
 	ue.gui.pos(ue.startPosX,ue.startPosY);
 	ue.gui.drag({currentTarget:true});
 	ue.gui.setBounds(0,0);
@@ -1164,11 +1234,14 @@ function getTerminatingUesList(id){
 //testing
 
 function startQueueingTimeUE1(){
-	getUeById(3).startQueueingTime();
+	
+	zog("startQueueingTimeUE1");
+
+	getUeById(3).startSpeechQueueingTime();
 }
 
 function stopQueueingTimeUE1(){
-	getUeById(3).stopQueueingTime();
+	getUeById(3).stopSpeechQueueingTime();
 }
 
 </script>
