@@ -164,22 +164,28 @@ function Cell(id, resources, startPosX, startPosY) {
 	{
 		case connectionType.EULHS:
 			if(this.eulHsUsersCount < this.hsAdmUsers){
-				return [true, false];
+				return {continuation : true, admissionQueued: false};
 			}else{
-				var queued = this.admissionQueue.addToQueue(ueId,prio,connType);
-				return [false, queued];
+				zog("admission reject for ps in cell: " + this.id);
+				var queued = this.admissionQueue.addToQueue(ueId,prio,queueingType.PS);
+				return {continuation : false, admissionQueued: queued};
 			}
 		break;
 		case connectionType.SPEECH:
 			if(this.speechUsersCount < this.speechAdmUsers){
-				return [true, false];
+				return {continuation : true, admissionQueued: false};
 			}else{
-				zog("admission reject cell: " + this.id);
-				return [false, false]; // TODO add to queue for speech
+				zog("admission reject for speech in cell: " + this.id);
+				var queued = this.admissionQueue.addToQueue(ueId,prio,queueingType.SPEECH);
+				return {continuation : false, admissionQueued: queued}; // TODO add to queue for speech
 			}
 		break;
 		default:
 	}
+  }
+  
+  this.admissionQueueRemoveUe = function(ueId, prio, queueingType){
+	return this.admissionQueue.removeFromQueue(ueId, prio, queueingType);
   }
 }
 
@@ -197,8 +203,10 @@ function UE(id, startPosX, startPosY, startCell){
 	
 	this.psconnection = false;
 	this.csconnection = false;
-	this.psQueueingTimer = new Timer(queuingTime, self, 'ps');
-	this.speechQueueingTimer = new Timer(queuingTime, self, 'speech');
+	this.psQueueingTimer = new Timer(queuingTime, self, queueingType.PS);
+	this.speechQueueingTimer = new Timer(queuingTime, self, queueingType.SPEECH);
+	self.psQueueingInfo = new Array({cellId: 1, isQueued: false},{cellId: 2, isQueued: false},{cellId: 3, isQueued: false});
+	self.speechQueueingInfo = new Array({cellId: 1, isQueued: false},{cellId: 2, isQueued: false},{cellId: 3, isQueued: false});
 	
 	this.connectionInfo = function(){
 		if(this.psconnection && this.csconnection)
@@ -229,8 +237,16 @@ function UE(id, startPosX, startPosY, startCell){
 				
 				var requestResult = getCellById(this.activeSet[i].cellId).admissionReq(this.id,this.psPriority,connectionType.EULHS);
 				
-				if(!requestResult[0]){
-					DANGER('EULHS was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.activeSetToString());
+				if(!requestResult.continuation){
+					DANGER('EULHS was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.activeSet[i].cellId);
+				
+					if(requestResult.admissionQueued == 'queued'){
+						
+						this.setPsQueued(this.activeSet[i].cellId);
+					
+						this.startPsQueueingTime();
+					}
+					
 					refreshSidebar();
 					return;
 				}
@@ -240,23 +256,24 @@ function UE(id, startPosX, startPosY, startCell){
 		}
 		else
 		{
-			zog(this.startCell);
 			
 			var requestResult = getCellById(this.startCell).admissionReq(this.id,this.psPriority,connectionType.EULHS);
 			
-			if(!requestResult[0]){
+			if(!requestResult.continuation){
 				DANGER('EULHS was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.startCell);
 				
-				zog("queued: " + requestResult[1]);
+				if(requestResult.admissionQueued == 'queued'){
 				
-				if(requestResult[1]){
+					this.setPsQueued(this.startCell);
+					
 					this.startPsQueueingTime();
 				}
 				
 				refreshSidebar();
 				return;
 			}
-			this.activeSet.push({cellId:this.startCell, isSpeechQueued: false, isPsQueued: false});
+			
+			this.activeSet.push({cellId:this.startCell});
 			this.psconnection = true;
 		}
 		
@@ -286,6 +303,14 @@ function UE(id, startPosX, startPosY, startCell){
 			getCellById(this.activeSet[i].cellId).eulHsUsersCount--;
 		}
 		
+		//remove queued ps
+		
+		if(this.isAnySpeechInQueue())
+		{
+			this.stopSpeechQueueingTime();
+			this.deleteFromQueue(queueingType.SPEECH);
+		}
+		
 		this.setCellsInRange();
 		this.updateActiveSet(cellArray);
 		
@@ -304,8 +329,14 @@ function UE(id, startPosX, startPosY, startCell){
 			{
 				var requestResult = getCellById(this.activeSet[i].cellId).admissionReq(this.id, this.speechPriority, connectionType.SPEECH);
 
-				if(!requestResult[0]){
-					DANGER('Speech was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.startCell);
+				if(!requestResult.continuation){
+					DANGER('Speech was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.activeSet[i].cellId);
+					
+					if(requestResult.admissionQueued == 'queued'){
+						this.setSpeechQueued(this.activeSet[i].cellId);
+						this.startSpeechQueueingTime();
+					}
+					
 					refreshSidebar();
 					return false;
 				}
@@ -316,12 +347,20 @@ function UE(id, startPosX, startPosY, startCell){
 		{
 			var requestResult = getCellById(this.startCell).admissionReq(this.id, this.speechPriority, connectionType.SPEECH);
 		
-			if(!requestResult[0]){
+			if(!requestResult.continuation){
 					DANGER('Speech was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.startCell);
+					
+					if(requestResult.admissionQueued == 'queued'){
+					
+						this.setSpeechQueued(this.startCell);
+						this.startSpeechQueueingTime();
+						
+					}
+					
 					refreshSidebar();
 					return false;
 			}
-			this.activeSet.push({cellId:this.startCell, isSpeechQueued: false, isPsQueued: false});
+			this.activeSet.push({cellId:this.startCell});
 			this.csconnection = true;
 		}
 		
@@ -356,6 +395,14 @@ function UE(id, startPosX, startPosY, startCell){
 			for(var i = 0; i < this.activeSet.length; i++)
 			{
 				getCellById(this.activeSet[i].cellId).speechUsersCount--;
+			}
+			
+			//remove queued ps
+			
+			if(this.isAnyPsInQueue())
+			{
+				this.stopPsQueueingTime();
+				this.deleteFromQueue(queueingType.PS);
 			}
 			
 			this.csconnection = false;
@@ -412,7 +459,20 @@ function UE(id, startPosX, startPosY, startCell){
 			}
 		}
 		
-		this.startCell = startCell;
+		if(this.startCell != startCell){
+			if(this.isAnyPsInQueue()){
+				zog('ps in queue');
+				this.stopPsQueueingTime();
+				this.deleteFromQueue(queueingType.PS);
+			}
+			
+			if(this.isAnySpeechInQueue()){
+				this.stopSpeechQueueingTime();
+				this.deleteFromQueue(queueingType.SPEECH);
+			}
+			
+			this.startCell = startCell;
+		}
 	};
 	
 	this.startPsQueueingTime = function(){
@@ -422,19 +482,20 @@ function UE(id, startPosX, startPosY, startCell){
 	};
 	
 	this.stopPsQueueingTime = function(){
+	
 		self.psQueueingTimer.stopTimer();
+		
+		
 	};
 	
 	this.updatePsQueuingTimer = function(){
-	
-		zog("updateQueuingTimer");
 		
 		var time = self.gui.getChildAt(1).getChildAt(3);
 		
 		time.text = self.psQueueingTimer.getCurrentTimeString();
 	}
 	
-		this.startPsQueueingTime = function(){
+	this.startPsQueueingTime = function(){
 	
 		self.psQueueingTimer.startTimer();
 		
@@ -458,7 +519,43 @@ function UE(id, startPosX, startPosY, startCell){
 		time.text = self.speechQueueingTimer.getCurrentTimeString();
 	}
 	
+	this.setPsQueued = function(cellId){
+		for(var i = 0; i < this.psQueueingInfo.length; i++){
+		
+			if(this.psQueueingInfo[i].cellId == cellId){
+				this.psQueueingInfo[i].isQueued = true;
+			}
+		}
+	}
 	
+	this.setSpeechQueued = function(cellId){
+		for(var i = 0; i < this.speechQueueingInfo.length; i++){
+			if(this.speechQueueingInfo[i].cellId == cellId){
+				this.speechQueueingInfo[i].isQueued = true;
+			}
+		}
+	}
+	
+	this.isAnyPsInQueue = function(){
+		for(var i = 0; i < this.psQueueingInfo.length; i++){
+		
+			if(this.psQueueingInfo[i].isQueued){
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	this.isAnySpeechInQueue = function(cellId){
+		for(var i = 0; i < this.speechQueueingInfo.length; i++){
+			if(this.speechQueueingInfo[i].isQueued ){
+				return true;
+			}
+		}
+		
+		return false;
+	}
 	
 	this.softHoAddition = function(cell){
 	
@@ -523,8 +620,7 @@ function UE(id, startPosX, startPosY, startCell){
 		}
 	}
 	
-	this.updateActiveSet = function(cells)
-	{
+	this.updateActiveSet = function(cells){
 		if(this.psconnection || this.csconnection){
 		//check for softHoAddition
 			for(var i = 0; i < this.cellsInRange.length; i++){
@@ -538,13 +634,11 @@ function UE(id, startPosX, startPosY, startCell){
 					}					
 				}
 				
-
-				
 				if(!alreadyInAs){
 					if(this.id == 1)
 						zog('now add to AS');
 					if(this.softHoAddition(this.cellsInRange[i])){
-						this.activeSet.push({cellId:this.cellsInRange[i], isSpeechQueued: false, isPsQueued: false});
+						this.activeSet.push({cellId:this.cellsInRange[i]});
 					}
 				}
 			}
@@ -573,8 +667,7 @@ function UE(id, startPosX, startPosY, startCell){
 		}
 	}
 	
-	this.getActiveSetIndexFromCellId = function(id)
-	{
+	this.getActiveSetIndexFromCellId = function(id){
 		for(var i = 0; i < this.activeSet.length; i++){
 			if(this.activeSet[i].cellId == id)
 			{
@@ -584,8 +677,32 @@ function UE(id, startPosX, startPosY, startCell){
 		return -1;
 	}
 	
-	this.deleteFromQueue = function(){
-		
+	this.deleteFromQueue = function(cqType){
+		if(cqType == queueingType.PS){
+			zog("ue" + this.id + " delete ps from queue");
+			
+			for(var i = 0; i < this.psQueueingInfo.length; i++){
+			
+					if(this.psQueueingInfo[i].isQueued){
+						zog("remove ue from cell: " + this.psQueueingInfo[i].cellId);
+						
+						getCellById(this.psQueueingInfo[i].cellId).admissionQueueRemoveUe(this.id, this.psPriority, queueingType.PS);
+						
+						self.psQueueingInfo[i].isQueued = false;
+					}
+			}
+			
+		}else{
+			zog("ue" + this.id + " delete speech from queue");
+
+			for(var i = 0; i < self.speechQueueingInfo.length; i++){
+					if(self.speechQueueingInfo[i].isQueued){
+						getCellById(self.speechQueueingInfo[i].cellId).admissionQueueRemoveUe(this.id, this.speechPriority, queueingType.SPEECH);
+						self.speechQueueingInfo[i].isQueued = false;
+					}
+			}
+			
+		}
 	}
 }
 

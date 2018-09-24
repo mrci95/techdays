@@ -26,7 +26,7 @@ function Timer(queueingTime, ue, timerType){
 			
 			zog("start timer for " + self.timerType);
 			
-			if(self.timerType == "ps"){
+			if(self.timerType == queueingType.PS){
 			
 				self.ue.updatePsQueuingTimer();
 				zog("start animation for ps");
@@ -35,6 +35,8 @@ function Timer(queueingTime, ue, timerType){
 				
 				
 				self.clockTick = setInterval(function(){ self.ue.updatePsQueuingTimer(); }, 1000);
+			
+				self.timeout = setTimeout(function(){ zog("ue" +  self.ue.id + " timeout for ps"); self.ue.stopPsQueueingTime(); self.ue.deleteFromQueue(queueingType.PS); }, self.queueingTime);
 				
 			}else{
 				
@@ -44,10 +46,10 @@ function Timer(queueingTime, ue, timerType){
 			    self.ue.gui.getChildAt(2).animate({obj:{alpha:1, x:80}, time:200});
 			
 				self.clockTick = setInterval(function(){ self.ue.updateSpeechQueuingTimer(); }, 1000); 
+			
+				self.timeout = setTimeout(function(){ zog("ue" +  self.ue.id + " timeout for speech"); self.ue.stopSpeechQueueingTime(); self.ue.deleteFromQueue(queueingType.SPEECH); }, self.queueingTime);
 				
 			}
-			
-			self.timeout = setTimeout(function(){ zog("timeout"); self.stopTimer(); }, self.queueingTime);
 		}
 	}
 	
@@ -72,6 +74,7 @@ function Timer(queueingTime, ue, timerType){
 				self.ue.updatePsQueuingTimer();
 				
 				self.ue.gui.getChildAt(1).animate({obj:{alpha:0, x:30}, time:200,  wait: 2000});
+				
 			}else{
 				
 				self.ue.updateSpeechQueuingTimer();

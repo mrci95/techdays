@@ -3,3 +3,8 @@ const connectionType = {
     SPEECH: 'speech_12_2',
     SPEECHEULHS: 'int_eul_hs_speech_12_2',
 }
+
+const queueingType = {
+	PS: 'ps',
+	SPEECH: 'speech'
+}
