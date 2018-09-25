@@ -136,11 +136,13 @@ var ueGuiContainer = new Container();
 var ueArray = new Array();
 var draggingObject = false;
 
+var cellRange = 250;
+
 var queuingTime = 9090;
 
 var sidebarElements = new Array();
 
-function Cell(id, resources, startPosX, startPosY) {
+function Cell(id, resources, startPosX, startPosY, queuePlacement) {
   this.id = id;
   this.eulHsUsersCount = 0;
   this.speechUsersCount = 0;
@@ -148,10 +150,14 @@ function Cell(id, resources, startPosX, startPosY) {
   this.speechAdmUsers = resources;
   this.psresources = resources;
   this.csresources = resources;
+  
+  this.queuePlacement = queuePlacement;
   this.startPosX = startPosX;
   this.startPosY = startPosY;
   
   this.admissionQueue = new Queue();
+  
+  this.admissionQueueContainer = undefined;
   
   this.getInfo = function() 
   {
@@ -186,6 +192,44 @@ function Cell(id, resources, startPosX, startPosY) {
   
   this.admissionQueueRemoveUe = function(ueId, prio, queueingType){
 	return this.admissionQueue.removeFromQueue(ueId, prio, queueingType);
+  }
+  
+  this.showQueue = function(){
+	switch(this.queuePlacement){
+		case 'left':
+			this.admissionQueueContainer.getChildAt(0).animate({obj:{alpha:0.8, x:0}, time:200});
+			break;
+		
+		case 'right':
+			this.admissionQueueContainer.getChildAt(0).animate({obj:{alpha:0.8, x:0}, time:200});
+			break;
+		
+		case 'bottom':
+			this.admissionQueueContainer.getChildAt(0).animate({obj:{alpha:0.8, y:0}, time:200});
+			break;
+		
+		default:
+			break;
+	}
+  }
+  
+  this.hideQueue = function(){
+  	switch(this.queuePlacement){
+		case 'left':
+			this.admissionQueueContainer.getChildAt(0).animate({obj:{alpha:0, x:50}, time:200});
+			break;
+		
+		case 'right':
+			this.admissionQueueContainer.getChildAt(0).animate({obj:{alpha:0, x:-50}, time:200});
+			break;
+		
+		case 'bottom':
+			this.admissionQueueContainer.getChildAt(0).animate({obj:{alpha:0, y:-50}, time:200});
+		break;
+		
+		default:
+			break;
+	}
   }
 }
 
@@ -303,14 +347,6 @@ function UE(id, startPosX, startPosY, startCell){
 			getCellById(this.activeSet[i].cellId).eulHsUsersCount--;
 		}
 		
-		//remove queued ps
-		
-		if(this.isAnySpeechInQueue())
-		{
-			this.stopSpeechQueueingTime();
-			this.deleteFromQueue(queueingType.SPEECH);
-		}
-		
 		this.setCellsInRange();
 		this.updateActiveSet(cellArray);
 		
@@ -397,14 +433,6 @@ function UE(id, startPosX, startPosY, startCell){
 				getCellById(this.activeSet[i].cellId).speechUsersCount--;
 			}
 			
-			//remove queued ps
-			
-			if(this.isAnyPsInQueue())
-			{
-				this.stopPsQueueingTime();
-				this.deleteFromQueue(queueingType.PS);
-			}
-			
 			this.csconnection = false;
 			
 			if(getUeById(this.terminatingUe).csconnection){
@@ -418,7 +446,6 @@ function UE(id, startPosX, startPosY, startCell){
 			
 			this.gui.getChildAt(0).getChildAt(0).animate({obj:{alpha:0}, time:500});
 		}
-
 		
 		refreshSidebar();
 	}
@@ -452,7 +479,7 @@ function UE(id, startPosX, startPosY, startCell){
 		{
 			var c = dist(cells[i].gui.x, cells[i].gui.y,this.gui.x,this.gui.y);
 			
-			if(c < 300 && c < distance)
+			if(c < cellRange && c < distance)
 			{
 				distance = c;
 				startCell = cells[i].id;
@@ -583,11 +610,22 @@ function UE(id, startPosX, startPosY, startCell){
 	
 	this.softHoDeletion = function(cell){
 		switch(this.connectionInfo()){
-			case connectionType.EULHS: 
+			case connectionType.EULHS:
+				
+				if(this.isAnySpeechInQueue()){
+					this.deleteFromQueue(queueingType.SPEECH);
+					this.stopSpeechQueueingTime();
+				}
+			
 				getCellById(cell).eulHsUsersCount--;
 				return true;
 			break;
 			case connectionType.SPEECH:
+				if(this.isAnyPsInQueue()){
+					this.deleteFromQueue(queueingType.PS);
+					this.stopPsQueueingTime();
+				}
+			
 				getCellById(cell).speechUsersCount--;
 				return true;
 			break;
@@ -613,7 +651,7 @@ function UE(id, startPosX, startPosY, startCell){
 				
 			var c = dist(cellArray[i].gui.x, cellArray[i].gui.y, this.gui.x,this.gui.y);
 			
-			if(c < 300)
+			if(c < cellRange)
 			{
 				this.cellsInRange.push(cellArray[i].id);
 			}
@@ -730,9 +768,6 @@ function UE(id, startPosX, startPosY, startCell){
 		var stage = frame.stage;
 		var stageW = frame.width;
 		var stageH = frame.height;
-
-		ueGuiContainer.addTo(stage);
-		ueGuiContainer.pos(0,0);
 		// see http://zimjs.com/learn.html for video and code tutorials
 		// see http://zimjs.com/docs.html for documentation
 		// see http://zimjs.com/bits.html for 64 Interactive Media techniques
@@ -743,24 +778,29 @@ function UE(id, startPosX, startPosY, startCell){
 
 		frame.on("complete", function() {
 			
-			 var cell_1 = new Cell(1,10,391,321);//cellId, resources, posX, posY
+			 var cell_1 = new Cell(1,10,461,301,'left');//cellId, resources, posX, posY, queuePlacement
 			 cellArray.push(cell_1);
 			 guiAddCell(cell_1, stage);
 			 
-			 var cell_2 = new Cell(2,10,813,406);
+			 var cell_2 = new Cell(2,10,843,396,'right');
 			 cellArray.push(cell_2);
 			 guiAddCell(cell_2, stage);
 			 
-			 var cell_3 = new Cell(3,10,547,742);
+			 var cell_3 = new Cell(3,10,617,652,'bottom');
 			 cellArray.push(cell_3);
 			 guiAddCell(cell_3, stage);
+			 
+			 
+
+			 ueGuiContainer.addTo(stage).top();
+			 ueGuiContainer.pos(0,0);
 			 
 			 var ue_1 = new UE(1, 400, 200, 1);
 			 ueArray.push(ue_1);
 			 guiAddUe(ue_1, stage);
 			 ue_1.setStartCell(cellArray);
 			 
-			 var ue_2 = new UE(2, 600, 850, 3);
+			 var ue_2 = new UE(2, 600, 750, 3);
 			 ueArray.push(ue_2);
 			 guiAddUe(ue_2, stage);
 			 
@@ -774,9 +814,6 @@ function UE(id, startPosX, startPosY, startCell){
 			}
 				
 			ueGuiContainer.on("pressup", function(e){ 
-				
-				zog(e.target.name);
-			
 			
 				if(!isNaN(e.target.name)){
 					if(!getUeById(e.target.name).psconnection && !getUeById(e.target.name).csconnection){ 
@@ -786,6 +823,17 @@ function UE(id, startPosX, startPosY, startCell){
 				
 				draggingObject = false;
 				refreshSidebar();
+			});
+			
+			ueGuiContainer.on("dblclick", function(e){ 
+				
+				
+				zog(e.target.name + " dblclick");
+				
+				
+				var mymodal = $('#modalAllLogs');
+				mymodal.find('.modal-body').html(getFullLogsList());
+				mymodal.modal('show');
 			});
 			
 			ueGuiContainer.on("mousedown", function(e){
@@ -822,34 +870,89 @@ function UE(id, startPosX, startPosY, startCell){
 
 function guiAddCell(cell, stage){
 	//create cell gui container
-	cell.gui = new Container();
 	
-	stage.addChild(cell.gui);
-	cell.gui.bot();
+	cell.admissionQueueContainer = new Container().addTo(stage).bot();
+	
+	cell.gui = new Container().addTo(stage).top();
 	
 	//setup start position
 	cell.gui.x = cell.startPosX; 
 	cell.gui.y = cell.startPosY;
 	
-	//cell label
-	var cell_Label = new Label("Cell_" + cell.id);
+	cell.admissionQueueContainer.x = cell.startPosX; 
+	cell.admissionQueueContainer.y = cell.startPosY;
+	
+	var admissionQueueGui = new Container().addTo(cell.admissionQueueContainer);
+	admissionQueueGui.name = "queue gui";
+	
+	var admissionQueueShape;
+	
+	switch(cell.queuePlacement){
+		case 'left':
+			admissionQueueShape = new createjs.Shape();
+			admissionQueueGui.addChild(admissionQueueShape);
+			admissionQueueShape.graphics
+			  .beginLinearGradientFill(["#00ff00","#ff0000"], [0, 1], 0, -cellRange , 0, cellRange)
+			  .drawRoundRectComplex (-cellRange - 100, -cellRange, cellRange+100, cellRange*2, 30,30,30,30);
+			  
+			  
+			admissionQueueGui.alp(0);
+			admissionQueueGui.pos(50,0);
+		break;
+		
+		case 'right':
+		
+			admissionQueueShape = new createjs.Shape();
+			
+			admissionQueueGui.addChild(admissionQueueShape);
+			
+			admissionQueueShape.graphics
+			  .beginLinearGradientFill(["#00ff00","#ff0000"], [0, 1], 0, -cellRange , 0, cellRange)
+			  .drawRoundRectComplex (0, -cellRange, cellRange+100, cellRange*2, 30,30,30,30);
+			  
+			
+			admissionQueueGui.alp(0);
+			admissionQueueGui.pos(-50,0);
+		
+			//admissionQueueShape = new Rectangle(cellRange+100,cellRange*2,"gray","gray",0,20).addTo(cell.admissionQueueGui).pos(0,-cellRange);
+		break;
+		
+		case 'bottom':
+			admissionQueueShape = new createjs.Shape();
+			admissionQueueGui.addChild(admissionQueueShape);
+			admissionQueueShape.graphics
+			  .beginLinearGradientFill(["#ff0000","#00ff00"], [0, 1], -cellRange, 0 , cellRange, 0 )
+			  .drawRoundRectComplex (-cellRange, 0, cellRange*2, cellRange+100, 30,30,30,30);
+		
+		
+			admissionQueueGui.alp(0);
+			admissionQueueGui.pos(0,-50);
+			//admissionQueueShape = new Rectangle(,cellRange+100,"gray","gray",0,20).addTo(cell.admissionQueueGui).pos(,0);
+		break;
+		
+		default:
+		break;
+	}
+	
+	var admissionQueueMask = new Circle(cellRange, ERICSSON_BLUE);
+	admissionQueueMask.addTo(cell.admissionQueueContainer);// add the circle to the container and center
+	admissionQueueMask.pos(0,0);
 	
 	//add label to gui container
-	cell.gui.addChild(cell_Label);
-	cell_Label.pos(-50,-25);
 	
-	var cell_Range = new Circle(300, WHITE);
-    cell_Range.blendMode = "multiply";
+	var cell_Range = new Circle(cellRange, WHITE);
+    cell_Range.blendMode = "screen";
 	cell_Range.alpha = .5;
 	cell_Range.addTo(cell.gui);// add the circle to the container and center
 	cell_Range.pos(0,0);
 	
+	
+	//cell label
+	var cell_Label = new Label("Cell_" + cell.id);
+	cell.gui.addChild(cell_Label);
+	cell_Label.pos(-50,-25);
+	
 	cell.gui.setBounds(0,0);
-	//cell.gui.outline();
-		
-	//zog("Gui pos(" + cell.gui.x + "," + cell.gui.y + ")" );
-	//zog("Range pos(" + cell_Range.x + "," + cell_Range.y + ")" );
-	//cell.gui.drag({currentTarget:true}); // will drag cell gui
 }
 
 function guiAddUe(ue, stage){
@@ -1026,7 +1129,7 @@ function setCellSettings(id){
 
 function getUesListForDropDown(){
 	var html = '';
-				  //<li type="button" data-toggle="modal" data-target="#cellSettingModal"><a href="#">Cell 1</a></li>
+	
 	for(var i = 0; i<ueArray.length; i++){
 		var htmlPerUe = '<li onclick="getUeSettings(' + ueArray[i].id + ')" class="btn-mainbar-2 btn-block" type="button" data-toggle="modal" data-target="#ueSettingModal">UE ' + ueArray[i].id + '</li>';
 		html = html + htmlPerUe;
@@ -1345,20 +1448,15 @@ function getTerminatingUesList(id){
 	
 }
 
-
-
-
 //testing
 
 function startQueueingTimeUE1(){
-	
-	zog("startQueueingTimeUE1");
 
-	getUeById(3).startSpeechQueueingTime();
+	getCellById(3).showQueue();
 }
 
 function stopQueueingTimeUE1(){
-	getUeById(3).stopSpeechQueueingTime();
+	getCellById(3).hideQueue();
 }
 
 </script>
