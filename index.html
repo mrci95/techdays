@@ -20,6 +20,8 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
   <script src="js/const.js"></script>
   <script src="js/logs.js"></script>
+  <script src="js/queueElement.js"></script>
+  <script src="js/queuePlace.js"></script>
   <script src="js/queue.js"></script>
   <script src="js/timer.js"></script>
   
@@ -143,6 +145,8 @@ var queuingTime = 9090;
 var sidebarElements = new Array();
 
 function Cell(id, resources, startPosX, startPosY, queuePlacement) {
+	var self = this;
+
   this.id = id;
   this.eulHsUsersCount = 0;
   this.speechUsersCount = 0;
@@ -155,16 +159,14 @@ function Cell(id, resources, startPosX, startPosY, queuePlacement) {
   this.startPosX = startPosX;
   this.startPosY = startPosY;
   
-  this.admissionQueue = new Queue();
-  
-  this.admissionQueueContainer = undefined;
+  this.admissionQueue = new Queue(self);
   
   this.getInfo = function() 
   {
 	return 'cell_id: ' + this.id + ', resources: ' + this.resources; 
   };
   
-  this.admissionReq = function(ueId,prio,connType){
+  this.admissionReq = function(ue,prio,connType){
   
 	switch(connType)
 	{
@@ -173,7 +175,7 @@ function Cell(id, resources, startPosX, startPosY, queuePlacement) {
 				return {continuation : true, admissionQueued: false};
 			}else{
 				zog("admission reject for ps in cell: " + this.id);
-				var queued = this.admissionQueue.addToQueue(ueId,prio,queueingType.PS);
+				var queued = this.admissionQueue.addToQueue(ue,prio,queueingType.PS);
 				return {continuation : false, admissionQueued: queued};
 			}
 		break;
@@ -182,7 +184,7 @@ function Cell(id, resources, startPosX, startPosY, queuePlacement) {
 				return {continuation : true, admissionQueued: false};
 			}else{
 				zog("admission reject for speech in cell: " + this.id);
-				var queued = this.admissionQueue.addToQueue(ueId,prio,queueingType.SPEECH);
+				var queued = this.admissionQueue.addToQueue(ue,prio,queueingType.SPEECH);
 				return {continuation : false, admissionQueued: queued}; // TODO add to queue for speech
 			}
 		break;
@@ -190,22 +192,22 @@ function Cell(id, resources, startPosX, startPosY, queuePlacement) {
 	}
   }
   
-  this.admissionQueueRemoveUe = function(ueId, prio, queueingType){
-	return this.admissionQueue.removeFromQueue(ueId, prio, queueingType);
+  this.admissionQueueRemoveUe = function(ue, prio, queueingType){
+	return this.admissionQueue.removeFromQueue(ue, prio, queueingType);
   }
   
   this.showQueue = function(){
 	switch(this.queuePlacement){
 		case 'left':
-			this.admissionQueueContainer.getChildAt(0).animate({obj:{alpha:0.8, x:0}, time:200});
+			this.admissionQueue.admissionQueueContainer.getChildAt(0).animate({obj:{alpha:0.5, x:0}, time:200});
 			break;
 		
 		case 'right':
-			this.admissionQueueContainer.getChildAt(0).animate({obj:{alpha:0.8, x:0}, time:200});
+			this.admissionQueue.admissionQueueContainer.getChildAt(0).animate({obj:{alpha:0.5, x:0}, time:200});
 			break;
 		
 		case 'bottom':
-			this.admissionQueueContainer.getChildAt(0).animate({obj:{alpha:0.8, y:0}, time:200});
+			this.admissionQueue.admissionQueueContainer.getChildAt(0).animate({obj:{alpha:0.5, y:0}, time:200});
 			break;
 		
 		default:
@@ -216,15 +218,15 @@ function Cell(id, resources, startPosX, startPosY, queuePlacement) {
   this.hideQueue = function(){
   	switch(this.queuePlacement){
 		case 'left':
-			this.admissionQueueContainer.getChildAt(0).animate({obj:{alpha:0, x:50}, time:200});
+			this.admissionQueue.admissionQueueContainer.getChildAt(0).animate({obj:{alpha:0, x:50}, time:200});
 			break;
 		
 		case 'right':
-			this.admissionQueueContainer.getChildAt(0).animate({obj:{alpha:0, x:-50}, time:200});
+			this.admissionQueue.admissionQueueContainer.getChildAt(0).animate({obj:{alpha:0, x:-50}, time:200});
 			break;
 		
 		case 'bottom':
-			this.admissionQueueContainer.getChildAt(0).animate({obj:{alpha:0, y:-50}, time:200});
+			this.admissionQueue.admissionQueueContainer.getChildAt(0).animate({obj:{alpha:0, y:-50}, time:200});
 		break;
 		
 		default:
@@ -251,6 +253,9 @@ function UE(id, startPosX, startPosY, startCell){
 	this.speechQueueingTimer = new Timer(queuingTime, self, queueingType.SPEECH);
 	self.psQueueingInfo = new Array({cellId: 1, isQueued: false},{cellId: 2, isQueued: false},{cellId: 3, isQueued: false});
 	self.speechQueueingInfo = new Array({cellId: 1, isQueued: false},{cellId: 2, isQueued: false},{cellId: 3, isQueued: false});
+	
+	self.psQueueElement = new QueueElement();
+	self.speechQueueElement = new QueueElement();
 	
 	this.connectionInfo = function(){
 		if(this.psconnection && this.csconnection)
@@ -279,7 +284,7 @@ function UE(id, startPosX, startPosY, startCell){
 			for(var i = 0; i < this.activeSet.length; i++)
 			{
 				
-				var requestResult = getCellById(this.activeSet[i].cellId).admissionReq(this.id,this.psPriority,connectionType.EULHS);
+				var requestResult = getCellById(this.activeSet[i].cellId).admissionReq(self,this.psPriority,connectionType.EULHS);
 				
 				if(!requestResult.continuation){
 					DANGER('EULHS was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.activeSet[i].cellId);
@@ -301,7 +306,7 @@ function UE(id, startPosX, startPosY, startCell){
 		else
 		{
 			
-			var requestResult = getCellById(this.startCell).admissionReq(this.id,this.psPriority,connectionType.EULHS);
+			var requestResult = getCellById(this.startCell).admissionReq(self,this.psPriority,connectionType.EULHS);
 			
 			if(!requestResult.continuation){
 				DANGER('EULHS was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.startCell);
@@ -363,7 +368,7 @@ function UE(id, startPosX, startPosY, startCell){
 		{
 			for(var i = 0; i < this.activeSet.length; i++)
 			{
-				var requestResult = getCellById(this.activeSet[i].cellId).admissionReq(this.id, this.speechPriority, connectionType.SPEECH);
+				var requestResult = getCellById(this.activeSet[i].cellId).admissionReq(self, this.speechPriority, connectionType.SPEECH);
 
 				if(!requestResult.continuation){
 					DANGER('Speech was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.activeSet[i].cellId);
@@ -381,7 +386,7 @@ function UE(id, startPosX, startPosY, startCell){
 		}
 		else
 		{
-			var requestResult = getCellById(this.startCell).admissionReq(this.id, this.speechPriority, connectionType.SPEECH);
+			var requestResult = getCellById(this.startCell).admissionReq(self, this.speechPriority, connectionType.SPEECH);
 		
 			if(!requestResult.continuation){
 					DANGER('Speech was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.startCell);
@@ -724,7 +729,7 @@ function UE(id, startPosX, startPosY, startCell){
 					if(this.psQueueingInfo[i].isQueued){
 						zog("remove ue from cell: " + this.psQueueingInfo[i].cellId);
 						
-						getCellById(this.psQueueingInfo[i].cellId).admissionQueueRemoveUe(this.id, this.psPriority, queueingType.PS);
+						getCellById(this.psQueueingInfo[i].cellId).admissionQueueRemoveUe(self, this.psPriority, queueingType.PS);
 						
 						self.psQueueingInfo[i].isQueued = false;
 					}
@@ -735,12 +740,16 @@ function UE(id, startPosX, startPosY, startCell){
 
 			for(var i = 0; i < self.speechQueueingInfo.length; i++){
 					if(self.speechQueueingInfo[i].isQueued){
-						getCellById(self.speechQueueingInfo[i].cellId).admissionQueueRemoveUe(this.id, this.speechPriority, queueingType.SPEECH);
+						getCellById(self.speechQueueingInfo[i].cellId).admissionQueueRemoveUe(self, this.speechPriority, queueingType.SPEECH);
 						self.speechQueueingInfo[i].isQueued = false;
 					}
 			}
 			
 		}
+	}
+	
+	this.getGlobalPos = function(){
+		return self.gui.parent.localToGlobal(self.gui.x, self.gui.y);
 	}
 }
 
@@ -778,7 +787,7 @@ function UE(id, startPosX, startPosY, startCell){
 
 		frame.on("complete", function() {
 			
-			 var cell_1 = new Cell(1,10,461,301,'left');//cellId, resources, posX, posY, queuePlacement
+			 var cell_1 = new Cell(1,0,461,301,'left');//cellId, resources, posX, posY, queuePlacement
 			 cellArray.push(cell_1);
 			 guiAddCell(cell_1, stage);
 			 
@@ -871,7 +880,7 @@ function UE(id, startPosX, startPosY, startCell){
 function guiAddCell(cell, stage){
 	//create cell gui container
 	
-	cell.admissionQueueContainer = new Container().addTo(stage).bot();
+	cell.admissionQueue.admissionQueueContainer = new Container().addTo(stage).bot();
 	
 	cell.gui = new Container().addTo(stage).top();
 	
@@ -879,59 +888,87 @@ function guiAddCell(cell, stage){
 	cell.gui.x = cell.startPosX; 
 	cell.gui.y = cell.startPosY;
 	
-	cell.admissionQueueContainer.x = cell.startPosX; 
-	cell.admissionQueueContainer.y = cell.startPosY;
+	cell.admissionQueue.admissionQueueContainer.x = cell.startPosX; 
+	cell.admissionQueue.admissionQueueContainer.y = cell.startPosY;
 	
-	var admissionQueueGui = new Container().addTo(cell.admissionQueueContainer);
+	var admissionQueueGui = new Container().addTo(cell.admissionQueue.admissionQueueContainer);
 	admissionQueueGui.name = "queue gui";
 	
+	var admissionQueueShapeBcg;
 	var admissionQueueShape;
 	
 	switch(cell.queuePlacement){
 		case 'left':
-			admissionQueueShape = new createjs.Shape();
+			admissionQueueShapeBcg = new Rectangle(cellRange+100,cellRange*2,"white","white",0,20).addTo(admissionQueueGui).pos(-cellRange - 100, -cellRange);
+			
+			admissionQueueShape = frame.asset("admissionqueue.png").clone();
+			
 			admissionQueueGui.addChild(admissionQueueShape);
-			admissionQueueShape.graphics
-			  .beginLinearGradientFill(["#00ff00","#ff0000"], [0, 1], 0, -cellRange , 0, cellRange)
-			  .drawRoundRectComplex (-cellRange - 100, -cellRange, cellRange+100, cellRange*2, 30,30,30,30);
+			
+			admissionQueueShape.rot(-90);
+			admissionQueueShape.sca(0.52);
+			admissionQueueShape.pos(-340,245);
+			
+			var queuePlaceX = -295;
+			var startQueuePlaceY = -200;
 			  
+			for(var i = 0; i < 10; i++){
+				cell.admissionQueue.createQueuePlace(queuePlaceX,startQueuePlaceY,admissionQueueGui);
+				startQueuePlaceY+=45;
+			}
 			  
 			admissionQueueGui.alp(0);
 			admissionQueueGui.pos(50,0);
+			
 		break;
 		
 		case 'right':
 		
-			admissionQueueShape = new createjs.Shape();
+			admissionQueueShapeBcg = new Rectangle(cellRange+100,cellRange*2,"white","white",0,20).addTo(admissionQueueGui).pos(0,-cellRange);
+			
+			admissionQueueShape = frame.asset("admissionqueue.png").clone();
 			
 			admissionQueueGui.addChild(admissionQueueShape);
 			
-			admissionQueueShape.graphics
-			  .beginLinearGradientFill(["#00ff00","#ff0000"], [0, 1], 0, -cellRange , 0, cellRange)
-			  .drawRoundRectComplex (0, -cellRange, cellRange+100, cellRange*2, 30,30,30,30);
+			admissionQueueShape.rot(-90);
+			admissionQueueShape.sca(0.52);
+			admissionQueueShape.pos(250,245);
+			
+			var queuePlaceX = 275;
+			var startQueuePlaceY = -220;
 			  
+			for(var i = 0; i < 10; i++){
+				cell.admissionQueue.createQueuePlace(queuePlaceX,startQueuePlaceY,admissionQueueGui);
+				startQueuePlaceY+=45;
+			}
 			
 			admissionQueueGui.alp(0);
 			admissionQueueGui.pos(-50,0);
-		
-			//admissionQueueShape = new Rectangle(cellRange+100,cellRange*2,"gray","gray",0,20).addTo(cell.admissionQueueGui).pos(0,-cellRange);
+			
 		break;
 		
 		case 'bottom':
+			
+			admissionQueueShapeBcg = new Rectangle(cellRange*2,cellRange+100,"white","white",0,20).addTo(admissionQueueGui).pos(-cellRange,0);
 		
-				var admissionQueueShape = frame.asset("admissionqueue.png").clone();
-		
-			//admissionQueueShape = new createjs.Shape();
+			admissionQueueShape = frame.asset("admissionqueue.png").clone();
+			
 			admissionQueueGui.addChild(admissionQueueShape);
-			//admissionQueueShape.graphics
-			  //.beginLinearGradientFill(["#ff0000","#00ff00"], [0, 1], -cellRange, 0 , cellRange, 0 )
-			  //.drawRoundRectComplex (-cellRange, 0, cellRange*2, cellRange+100, 30,30,30,30);
-			admissionQueueShape.sca(0.5);
-			admissionQueueShape.pos(-250,230);
+			
+			admissionQueueShape.sca(0.52);
+			admissionQueueShape.pos(-245,250);
+			
+			var queuePlaceX = -225;
+			var startQueuePlaceY = 275;
+			
+			for(var i = 0; i < 10; i++){
+				cell.admissionQueue.createQueuePlace(queuePlaceX,startQueuePlaceY,admissionQueueGui);
+				queuePlaceX+=45;
+			}
+			
 		
 			admissionQueueGui.alp(0);
 			admissionQueueGui.pos(0,-50);
-			//admissionQueueShape = new Rectangle(,cellRange+100,"gray","gray",0,20).addTo(cell.admissionQueueGui).pos(,0);
 		break;
 		
 		default:
@@ -939,7 +976,7 @@ function guiAddCell(cell, stage){
 	}
 	
 	var admissionQueueMask = new Circle(cellRange, ERICSSON_BLUE);
-	admissionQueueMask.addTo(cell.admissionQueueContainer);// add the circle to the container and center
+	admissionQueueMask.addTo(cell.admissionQueue.admissionQueueContainer);// add the circle to the container and center
 	admissionQueueMask.pos(0,0);
 	
 	//add label to gui container
@@ -1059,6 +1096,7 @@ function guiAddUe(ue, stage){
 		//add label to gui container
 		speechQueueingTimerGui.addChild(speechCqTime);
 		speechCqTime.pos(-27,40);
+	
 		
 	ue.gui.pos(ue.startPosX,ue.startPosY);
 	ue.gui.drag({currentTarget:true});
@@ -1456,10 +1494,14 @@ function getTerminatingUesList(id){
 
 function startQueueingTimeUE1(){
 
+	getCellById(1).showQueue();
+	getCellById(2).showQueue();
 	getCellById(3).showQueue();
 }
 
 function stopQueueingTimeUE1(){
+	getCellById(1).hideQueue();
+	getCellById(2).hideQueue();
 	getCellById(3).hideQueue();
 }
 
@@ -1504,8 +1546,8 @@ function stopQueueingTimeUE1(){
 				<button type="button" class="btn-mainbar-1 btn-block custom-modal" >Show all logs<span style="padding-left: 15px;" class="far fa-file-alt"></span></button>
 			</div>
 			<div class="row" style="margin-left:0px; margin-right:0px; position:relative; top: 2px;">
-				<button onclick="startQueueingTimeUE1();" type="button" class="btn-mainbar-1 btn-block" >startQueueingTime</button>
-				<button onclick="stopQueueingTimeUE1();" type="button" class="btn-mainbar-1 btn-block" >stopQueueingTime</button>
+				<button onclick="startQueueingTimeUE1();" type="button" class="btn-mainbar-1 btn-block" >Show queues</button>
+				<button onclick="stopQueueingTimeUE1();" type="button" class="btn-mainbar-1 btn-block" >Hide queues</button>
 			</div>
 		</div>
 	</div>
