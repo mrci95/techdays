@@ -72,7 +72,6 @@ function Queue(cell){
 		
 		self.addAdmissionQueueElement(ue, prio, queuedConnection);
 		
-		
 		return 'queued';
 		
 	}
@@ -91,7 +90,8 @@ function Queue(cell){
 				
 				self.queueElements[elementIndex].hide();
 				
-				setTimeout(function(){self.queueElements.splice(elementIndex,1); self.updateElementsPosition();},300);
+				self.queueElements.splice(elementIndex,1); 
+				self.updateElementsPosition();
 				
 				
 				
@@ -111,7 +111,6 @@ function Queue(cell){
 	
 	self.addAdmissionQueueElement = function(ue, prio, queuedConnection){
 		
-		setTimeout(function(){
 			
 			var queueElement = new QueueElement(ue, prio, queuedConnection);
 			
@@ -133,18 +132,10 @@ function Queue(cell){
 			
 			queueElement.show();
 			
-			var placeInQueue = self.getPlaceInQueue(ue, prio, queuedConnection);
-			
-			zog("placeInQuueueu: " + placeInQueue);
-			
-			if(placeInQueue!=-1){
-				
-				placeGlobalPosition = self.queuePlaces[placeInQueue].getGlobalPos();
-				queueElement.moveToPlaceInQueue(placeGlobalPosition.x,placeGlobalPosition.y);
-			}
-			
 			self.queueElements.push(queueElement);
-		}, 300);
+			
+			self.updateElementsPosition();
+			
 	}
 	
 	self.createQueuePlace = function(posx, posy, parentCandidate){
@@ -164,6 +155,7 @@ function Queue(cell){
 			for(var j = 0; j < self.queue[i].length; j++){
 				
 				if(self.queue[i][j][0] == ue.id && self.queue[i][j][1] == prio &&  self.queue[i][j][2] == queuedConnection){
+					zog("place in queue for ue" + ue.id + ":" + placeInQueue);
 					return placeInQueue;
 				}
 				placeInQueue++;

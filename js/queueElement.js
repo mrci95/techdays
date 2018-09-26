@@ -9,11 +9,11 @@ function QueueElement(ue, prio, queuedConnection){
 	self.gui = undefined;
 	
 	self.show = function(){
-		self.gui.animate({obj:{alpha:1}, time:300});
+		self.gui.alpha = 1;
 	}
 	
 	self.hide = function(){
-		self.gui.animate({obj:{alpha:0}, time:300});
+		self.gui.alpha = 0;
 	}
 	
 	self.moveToPlaceInQueue = function(posx,posy){

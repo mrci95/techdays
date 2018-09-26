@@ -247,6 +247,16 @@ function UE(id, startPosX, startPosY, startCell){
 	this.speechPriority = 1;
 	this.psPriority = 5;
 	
+	if(id == 1){
+		this.psPriority = 5;
+	}
+	if(id == 2){
+		this.psPriority = 6;
+	}
+	if(id == 3){
+		this.psPriority = 7;
+	}
+	
 	this.psconnection = false;
 	this.csconnection = false;
 	this.psQueueingTimer = new Timer(queuingTime, self, queueingType.PS);
