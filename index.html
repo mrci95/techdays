@@ -774,7 +774,7 @@ function UE(id, startPosX, startPosY, startCell){
 
 		// put your code here (you can delete this sample code)
 		
-		frame.loadAssets(["ue.png", "call.png", "transfer.png" ], "assets/");
+		frame.loadAssets(["ue.png", "call.png", "transfer.png", "admissionqueue.png" ], "assets/");
 
 		frame.on("complete", function() {
 			
@@ -918,12 +918,16 @@ function guiAddCell(cell, stage){
 		break;
 		
 		case 'bottom':
-			admissionQueueShape = new createjs.Shape();
-			admissionQueueGui.addChild(admissionQueueShape);
-			admissionQueueShape.graphics
-			  .beginLinearGradientFill(["#ff0000","#00ff00"], [0, 1], -cellRange, 0 , cellRange, 0 )
-			  .drawRoundRectComplex (-cellRange, 0, cellRange*2, cellRange+100, 30,30,30,30);
 		
+				var admissionQueueShape = frame.asset("admissionqueue.png").clone();
+		
+			//admissionQueueShape = new createjs.Shape();
+			admissionQueueGui.addChild(admissionQueueShape);
+			//admissionQueueShape.graphics
+			  //.beginLinearGradientFill(["#ff0000","#00ff00"], [0, 1], -cellRange, 0 , cellRange, 0 )
+			  //.drawRoundRectComplex (-cellRange, 0, cellRange*2, cellRange+100, 30,30,30,30);
+			admissionQueueShape.sca(0.5);
+			admissionQueueShape.pos(-250,230);
 		
 			admissionQueueGui.alp(0);
 			admissionQueueGui.pos(0,-50);
