@@ -1544,6 +1544,37 @@ function stopQueueingTimeUE1(){
 
 </script>
 
+<script>
+/* Get the documentElement (<html>) to display the page in fullscreen */
+var elem = document.documentElement;
+
+/* View in fullscreen */
+function openFullscreen() {
+  if (elem.requestFullscreen) {
+    elem.requestFullscreen();
+  } else if (elem.mozRequestFullScreen) { /* Firefox */
+    elem.mozRequestFullScreen();
+  } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari and Opera */
+    elem.webkitRequestFullscreen();
+  } else if (elem.msRequestFullscreen) { /* IE/Edge */
+    elem.msRequestFullscreen();
+  }
+}
+
+/* Close fullscreen */
+function closeFullscreen() {
+  if (document.exitFullscreen) {
+    document.exitFullscreen();
+  } else if (document.mozCancelFullScreen) { /* Firefox */
+    document.mozCancelFullScreen();
+  } else if (document.webkitExitFullscreen) { /* Chrome, Safari and Opera */
+    document.webkitExitFullscreen();
+  } else if (document.msExitFullscreen) { /* IE/Edge */
+    document.msExitFullscreen();
+  }
+}
+</script>
+
 </head>
 
 <body>
@@ -1583,8 +1614,8 @@ function stopQueueingTimeUE1(){
 				<button type="button" class="btn-mainbar-1 btn-block custom-modal" >Show all logs<span style="padding-left: 15px;" class="far fa-file-alt"></span></button>
 			</div>
 			<div class="row" style="margin-left:0px; margin-right:0px; position:relative; top: 2px;">
-				<!--<button onclick="startQueueingTimeUE1();" type="button" class="btn-mainbar-1 btn-block" >Show queues</button>
-				<button onclick="stopQueueingTimeUE1();" type="button" class="btn-mainbar-1 btn-block" >Hide queues</button>-->
+				<button onclick="openFullscreen();" type="button" class="btn-mainbar-1 btn-block" >Open full screen</button>
+				<button onclick="closeFullscreen();" type="button" class="btn-mainbar-1 btn-block" >Hide full screen</button>
 			</div>
 		</div>
 	</div>
