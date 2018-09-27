@@ -336,9 +336,7 @@ function UE(id, startPosX, startPosY, startCell){
 			this.psconnection = true;
 		}
 		
-		this.setCellsInRange();
-		this.updateActiveSet(cellArray);
-		
+				
 		if(this.psconnection){
 		
 			for(var i = 0; i < this.activeSet.length; i++){
@@ -350,6 +348,10 @@ function UE(id, startPosX, startPosY, startCell){
 			SUCCESS('EULHS established for UE: ' + this.id + ', ActiveSet = ' + this.activeSetToString());
 			
 		}
+		
+		this.setCellsInRange();
+		this.updateActiveSet(cellArray);
+
 		refreshSidebar();
 	}
 	
@@ -415,8 +417,6 @@ function UE(id, startPosX, startPosY, startCell){
 			this.csconnection = true;
 		}
 		
-		this.setCellsInRange();
-		this.updateActiveSet(cellArray);
 		
 		if(this.csconnection){
 			for(var i = 0; i < this.activeSet.length; i++){
@@ -428,6 +428,9 @@ function UE(id, startPosX, startPosY, startCell){
 			SUCCESS('Speech established for UE: ' + this.id + ', ActiveSet = ' + this.activeSetToString());
 			
 		}
+		
+		this.setCellsInRange();
+		this.updateActiveSet(cellArray);
 		
 		if(getUeById(this.terminatingUe).csconnection == false){
 			if(!getUeById(this.terminatingUe).startCsConnection(this.id)){
@@ -502,18 +505,21 @@ function UE(id, startPosX, startPosY, startCell){
 		}
 		
 		if(this.startCell != startCell){
+		
+			this.startCell = startCell;
+		
 			if(this.isAnyPsInQueue()){
 				zog('ps in queue');
 				this.stopPsQueueingTime();
 				this.deleteFromQueue(queueingType.PS);
+				this.startPsConnection();
 			}
 			
 			if(this.isAnySpeechInQueue()){
 				this.stopSpeechQueueingTime();
 				this.deleteFromQueue(queueingType.SPEECH);
+				this.startCsConnection(this.terminatingUe);
 			}
-			
-			this.startCell = startCell;
 		}
 	};
 	
@@ -603,6 +609,7 @@ function UE(id, startPosX, startPosY, startCell){
 	
 		switch(this.connectionInfo()){
 			case connectionType.EULHS: 
+				zog("increase user count for cell " + cell + " by soho addition");
 				getCellById(cell).eulHsUsersCount++;
 				return true;
 			break;
@@ -626,21 +633,12 @@ function UE(id, startPosX, startPosY, startCell){
 	this.softHoDeletion = function(cell){
 		switch(this.connectionInfo()){
 			case connectionType.EULHS:
-				
-				if(this.isAnySpeechInQueue()){
-					this.deleteFromQueue(queueingType.SPEECH);
-					this.stopSpeechQueueingTime();
-				}
 			
 				getCellById(cell).eulHsUsersCount--;
 				return true;
 			break;
 			case connectionType.SPEECH:
-				if(this.isAnyPsInQueue()){
-					this.deleteFromQueue(queueingType.PS);
-					this.stopPsQueueingTime();
-				}
-			
+
 				getCellById(cell).speechUsersCount--;
 				return true;
 			break;
@@ -678,7 +676,6 @@ function UE(id, startPosX, startPosY, startCell){
 		//check for softHoAddition
 			for(var i = 0; i < this.cellsInRange.length; i++){
 				var alreadyInAs = false;
-				
 
 				
 				for(var j = 0; j < this.activeSet.length; j++){
@@ -710,6 +707,19 @@ function UE(id, startPosX, startPosY, startCell){
 					if(this.softHoDeletion(this.activeSet[i].cellId)){
 						
 						this.activeSet.splice(i,1);
+				
+						if(this.isAnySpeechInQueue()){
+							this.deleteFromQueue(queueingType.SPEECH);
+							this.stopSpeechQueueingTime();
+							this.startCsConnection(this.terminatingUe);
+						}
+						
+						if(this.isAnyPsInQueue()){
+							this.deleteFromQueue(queueingType.PS);
+							this.stopPsQueueingTime();
+							this.startPsConnection();
+						}
+						
 						i--;
 					}
 				}
@@ -1556,8 +1566,8 @@ function stopQueueingTimeUE1(){
 				<button type="button" class="btn-mainbar-1 btn-block custom-modal" >Show all logs<span style="padding-left: 15px;" class="far fa-file-alt"></span></button>
 			</div>
 			<div class="row" style="margin-left:0px; margin-right:0px; position:relative; top: 2px;">
-				<button onclick="startQueueingTimeUE1();" type="button" class="btn-mainbar-1 btn-block" >Show queues</button>
-				<button onclick="stopQueueingTimeUE1();" type="button" class="btn-mainbar-1 btn-block" >Hide queues</button>
+				<!--<button onclick="startQueueingTimeUE1();" type="button" class="btn-mainbar-1 btn-block" >Show queues</button>
+				<button onclick="stopQueueingTimeUE1();" type="button" class="btn-mainbar-1 btn-block" >Hide queues</button>-->
 			</div>
 		</div>
 	</div>
