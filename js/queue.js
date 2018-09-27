@@ -96,7 +96,7 @@ function Queue(cell){
 				
 				
 				if(self.usersInQueue() < 1){
-						setTimeout(function(){ self.cell.hideQueue(); }, 5000);
+						setTimeout(function(){ if(self.usersInQueue() < 1){ self.cell.hideQueue(); } }, 5000);
 				}
 				
 				return true;

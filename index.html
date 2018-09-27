@@ -673,7 +673,19 @@ function UE(id, startPosX, startPosY, startCell){
 	
 	this.updateActiveSet = function(cells){
 		if(this.psconnection || this.csconnection){
-		//check for softHoAddition
+			
+			
+			
+			//if out of range
+			if(this.cellsInRange.length == 0){
+			
+				this.stopPsConnection();
+				this.stopCsConnection();
+				
+				this.activeSet = [];
+			}
+			
+			//check for softHoAddition
 			for(var i = 0; i < this.cellsInRange.length; i++){
 				var alreadyInAs = false;
 
