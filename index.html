@@ -316,6 +316,10 @@ function UE(id, startPosX, startPosY, startCell){
 		else
 		{
 			
+			if(this.startCell == undefined){
+				return false;
+			}
+			
 			var requestResult = getCellById(this.startCell).admissionReq(self,this.psPriority,connectionType.EULHS);
 			
 			if(!requestResult.continuation){
@@ -343,7 +347,7 @@ function UE(id, startPosX, startPosY, startCell){
 				getCellById(this.activeSet[i].cellId).eulHsUsersCount++;
 			}
 			
-			this.gui.getChildAt(0).getChildAt(1).animate({obj:{alpha:1}, time:500});
+			this.gui.getChildAt(0).getChildAt(1).animate({obj:{alpha:1}, time:300});
 			
 			SUCCESS('EULHS established for UE: ' + this.id + ', ActiveSet = ' + this.activeSetToString());
 			
@@ -367,7 +371,7 @@ function UE(id, startPosX, startPosY, startCell){
 		this.setCellsInRange();
 		this.updateActiveSet(cellArray);
 		
-		this.gui.getChildAt(0).getChildAt(1).animate({obj:{alpha:0}, time:500});
+		this.gui.getChildAt(0).getChildAt(1).animate({obj:{alpha:0}, time:300});
 		
 		refreshSidebar();
 	}
@@ -398,6 +402,10 @@ function UE(id, startPosX, startPosY, startCell){
 		}
 		else
 		{
+			if(this.startCell == undefined){
+				return false;
+			}
+		
 			var requestResult = getCellById(this.startCell).admissionReq(self, this.speechPriority, connectionType.SPEECH);
 		
 			if(!requestResult.continuation){
@@ -674,17 +682,6 @@ function UE(id, startPosX, startPosY, startCell){
 	this.updateActiveSet = function(cells){
 		if(this.psconnection || this.csconnection){
 			
-			
-			
-			//if out of range
-			if(this.cellsInRange.length == 0){
-			
-				this.stopPsConnection();
-				this.stopCsConnection();
-				
-				this.activeSet = [];
-			}
-			
 			//check for softHoAddition
 			for(var i = 0; i < this.cellsInRange.length; i++){
 				var alreadyInAs = false;
@@ -888,7 +885,15 @@ function UE(id, startPosX, startPosY, startCell){
 				if(draggingObject)
 				{
 					for(var i = 0; i < ueArray.length; i++){
-						ueArray[i].setCellsInRange();	
+						ueArray[i].setCellsInRange();
+						
+						if(ueArray[i].cellsInRange.length == 0){
+							ueArray[i].stopPsConnection();
+							ueArray[i].stopCsConnection();
+							
+							ueArray[i].activeSet = [];
+						}
+						
 					
 						if(ueArray[i].csconnection || ueArray[i].psconnection){
 							ueArray[i].updateActiveSet(cellArray);
@@ -944,7 +949,7 @@ function guiAddCell(cell, stage){
 			var queuePlaceX = -295;
 			var startQueuePlaceY = -200;
 			  
-			for(var i = 0; i < 10; i++){
+			for(var i = 0; i < queueLength; i++){
 				cell.admissionQueue.createQueuePlace(queuePlaceX,startQueuePlaceY,admissionQueueGui);
 				startQueuePlaceY+=45;
 			}
@@ -966,10 +971,10 @@ function guiAddCell(cell, stage){
 			admissionQueueShape.sca(0.52);
 			admissionQueueShape.pos(250,245);
 			
-			var queuePlaceX = 275;
-			var startQueuePlaceY = -220;
+			var queuePlaceX = 295;
+			var startQueuePlaceY = -200;
 			  
-			for(var i = 0; i < 10; i++){
+			for(var i = 0; i < queueLength; i++){
 				cell.admissionQueue.createQueuePlace(queuePlaceX,startQueuePlaceY,admissionQueueGui);
 				startQueuePlaceY+=45;
 			}
@@ -990,12 +995,12 @@ function guiAddCell(cell, stage){
 			admissionQueueShape.sca(0.52);
 			admissionQueueShape.pos(-245,250);
 			
-			var queuePlaceX = -225;
-			var startQueuePlaceY = 275;
+			var queuePlaceX = 200;
+			var startQueuePlaceY = 295;
 			
-			for(var i = 0; i < 10; i++){
+			for(var i = 0; i < queueLength; i++){
 				cell.admissionQueue.createQueuePlace(queuePlaceX,startQueuePlaceY,admissionQueueGui);
-				queuePlaceX+=45;
+				queuePlaceX-=45;
 			}
 			
 		

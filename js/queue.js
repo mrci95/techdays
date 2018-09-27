@@ -45,7 +45,7 @@ function Queue(cell){
 	}
 	
 	self.addToQueue = function(ue, prio, queuedConnection){
-		if(self.usersInQueue() >= 10){
+		if(self.usersInQueue() >= queueLength){
 				return 'queueFull';
 		}
 		
