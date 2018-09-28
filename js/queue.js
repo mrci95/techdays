@@ -181,5 +181,17 @@ function Queue(cell){
 		} 
 	}
 	
+	self.getFirsUserFromQueue = function(){
+		
+		for( var i = 0; i < self.queue.length; i++){
+			
+			if(self.queue[i].length != 0){
+				
+				return self.queue[i][0];
+			}
+		}
+		
+		return 'noUsersInQueue';
+	}
 	
 }

@@ -131,16 +131,8 @@
 <script>
 
 var frame;
-var ERICSSON_BLUE = "#032564"
-var WHITE = "#D2D2D2"
-var cellArray = new Array();
-var ueGuiContainer = new Container();
-var ueArray = new Array();
+
 var draggingObject = false;
-
-var cellRange = 250;
-
-var queuingTime = 9090;
 
 var sidebarElements = new Array();
 
@@ -232,6 +224,49 @@ function Cell(id, resources, startPosX, startPosY, queuePlacement) {
 		default:
 			break;
 	}
+  }
+  
+  this.admissionDecreaseLoad = function(connection){
+  
+	switch(connection){
+		case connectionType.EULHS:
+				zog("decrease eulhs");
+				this.eulHsUsersCount--;
+			break;
+		
+		case connectionType.SPEECH:
+				this.speechUsersCount--;
+			break;
+			
+		case connectionType.SPEECHEULHS:
+				this.eulHsUsersCount--;
+				this.speechUsersCount--;
+			break;
+			
+		default:
+		
+			break;
+	}
+	
+	if(this.admissionQueue.usersInQueue() > 0){
+		this.checkResourcesForQueuedUser();
+	}
+  }
+  
+  this.checkResourcesForQueuedUser = function(){
+  
+	var queuedUser = this.admissionQueue.getFirsUserFromQueue();
+	
+	if(queuedUser[2] == queueingType.PS){
+		if(this.eulHsUsersCount < this.hsAdmUsers){
+			getUeById(queuedUser[0]).resourceAvailable(queueingType.PS);
+		}
+	}else{
+		if(this.speechUsersCount < this.speechAdmUsers){
+			getUeById(queuedUser[0]).resourceAvailable(queueingType.SPEECH);
+		}
+	}
+	
   }
 }
 
@@ -365,7 +400,7 @@ function UE(id, startPosX, startPosY, startCell){
 		
 		for(var i = 0; i < this.activeSet.length; i++)
 		{
-			getCellById(this.activeSet[i].cellId).eulHsUsersCount--;
+			getCellById(this.activeSet[i].cellId).admissionDecreaseLoad(connectionType.EULHS);
 		}
 		
 		this.setCellsInRange();
@@ -456,7 +491,7 @@ function UE(id, startPosX, startPosY, startCell){
 		if(this.csconnection){
 			for(var i = 0; i < this.activeSet.length; i++)
 			{
-				getCellById(this.activeSet[i].cellId).speechUsersCount--;
+				getCellById(this.activeSet[i].cellId).admissionDecreaseLoad(connectionType.SPEECH);
 			}
 			
 			this.csconnection = false;
@@ -642,18 +677,17 @@ function UE(id, startPosX, startPosY, startCell){
 		switch(this.connectionInfo()){
 			case connectionType.EULHS:
 			
-				getCellById(cell).eulHsUsersCount--;
+				getCellById(cell).admissionDecreaseLoad(connectionType.EULHS);
 				return true;
 			break;
 			case connectionType.SPEECH:
 
-				getCellById(cell).speechUsersCount--;
+				getCellById(cell).admissionDecreaseLoad(connectionType.SPEECH);
 				return true;
 			break;
 			
 			case connectionType.SPEECHEULHS: 
-				getCellById(cell).eulHsUsersCount--;
-				getCellById(cell).speechUsersCount--;
+				getCellById(cell).admissionDecreaseLoad(connectionType.SPEECHEULHS);
 				return true;
 			break;
 			
@@ -777,6 +811,33 @@ function UE(id, startPosX, startPosY, startCell){
 		}
 	}
 	
+	this.resourceAvailable = function(connection){
+		zog("resourceAvailable for ue" + this.id);
+	
+		switch(connection){
+			case queueingType.PS:
+			
+				this.stopPsQueueingTime();
+				this.deleteFromQueue(queueingType.PS);
+				this.startPsConnection();
+				
+			break;
+			
+			case queueingType.SPEECH:
+			
+				this.stopSpeechQueueingTime();
+				this.deleteFromQueue(queueingType.SPEECH);
+				this.startCsConnection(this.terminatingUe);
+			
+			break;
+			
+			default:
+				
+			break;
+			
+		}
+	}
+	
 	this.getGlobalPos = function(){
 		return self.gui.parent.localToGlobal(self.gui.x, self.gui.y);
 	}
@@ -816,7 +877,7 @@ function UE(id, startPosX, startPosY, startCell){
 
 		frame.on("complete", function() {
 			
-			 var cell_1 = new Cell(1,0,461,301,'left');//cellId, resources, posX, posY, queuePlacement
+			 var cell_1 = new Cell(1,1,461,301,'left');//cellId, resources, posX, posY, queuePlacement
 			 cellArray.push(cell_1);
 			 guiAddCell(cell_1, stage);
 			 
@@ -1142,29 +1203,7 @@ function guiAddUe(ue, stage){
 }
 
 
-function getCellById(id){
-	var noOfCells = cellArray.length;
-	for(var i = 0; i<noOfCells; i++)
-	{
-		if(cellArray[i].id == id)
-		{
-			return cellArray[i];
-		}
-	}
-	return undefined;
-}
 
-function getUeById(id){
-	var noOfUEs = ueArray.length;
-	for(var i = 0; i<noOfUEs; i++)
-	{
-		if(ueArray[i].id == id)
-		{
-			return ueArray[i];
-		}
-	}
-	return undefined;
-}
 
 function getCellSettings(id){
 	
