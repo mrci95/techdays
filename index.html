@@ -350,12 +350,15 @@ function UE(id, startPosX, startPosY, startCell){
 		}
 		else
 		{
-			
+			zog("step1");
 			if(this.startCell == undefined){
 				return false;
 			}
 			
 			var requestResult = getCellById(this.startCell).admissionReq(self,this.psPriority,connectionType.EULHS);
+			
+			
+			zog("step2");
 			
 			if(!requestResult.continuation){
 				DANGER('EULHS was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.startCell);
@@ -371,8 +374,14 @@ function UE(id, startPosX, startPosY, startCell){
 				return;
 			}
 			
+			
+			zog("step3");
+			
 			this.activeSet.push({cellId:this.startCell});
 			this.psconnection = true;
+			
+			
+			zog("step4");
 		}
 		
 				
@@ -475,11 +484,8 @@ function UE(id, startPosX, startPosY, startCell){
 		this.setCellsInRange();
 		this.updateActiveSet(cellArray);
 		
-		if(getUeById(this.terminatingUe).csconnection == false){
-			if(!getUeById(this.terminatingUe).startCsConnection(this.id)){
-				this.stopCsConnection();
-			}
-		}
+		if(!getUeById(this.terminatingUe).csconnection)
+			getUeById(this.terminatingUe).startCsConnection(this.id);
 		
 		refreshSidebar();
 		
@@ -593,7 +599,7 @@ function UE(id, startPosX, startPosY, startCell){
 	};
 	
 	this.startSpeechQueueingTime = function(){
-	
+		
 		zog("startSpeechQueueingTime");
 		self.speechQueueingTimer.startTimer();
 		
@@ -800,13 +806,18 @@ function UE(id, startPosX, startPosY, startCell){
 			
 		}else{
 			zog("ue" + this.id + " delete speech from queue");
-
+			
+			
+			
 			for(var i = 0; i < self.speechQueueingInfo.length; i++){
 					if(self.speechQueueingInfo[i].isQueued){
 						getCellById(self.speechQueueingInfo[i].cellId).admissionQueueRemoveUe(self, this.speechPriority, queueingType.SPEECH);
 						self.speechQueueingInfo[i].isQueued = false;
 					}
 			}
+			
+			if(getUeById(this.terminatingUe).csconnection)
+				getUeById(this.terminatingUe).stopCsConnection();
 			
 		}
 	}
@@ -888,8 +899,6 @@ function UE(id, startPosX, startPosY, startCell){
 			 var cell_3 = new Cell(3,10,617,652,'bottom');
 			 cellArray.push(cell_3);
 			 guiAddCell(cell_3, stage);
-			 
-			 
 
 			 ueGuiContainer.addTo(stage).top();
 			 ueGuiContainer.pos(0,0);
@@ -906,9 +915,61 @@ function UE(id, startPosX, startPosY, startCell){
 			 var ue_3 = new UE(3, 900, 300, 2);
 			 ueArray.push(ue_3);
 			 guiAddUe(ue_3, stage);
+			 
+			 //add ue
+			 
+			 
+			var addUeGui = new Rectangle(150,200,"white","white",0,40).addTo(stage).reg(0,300).pos(-50,1060).alp(0.5);
+			var addPhoneIcon =  frame.asset("ue.png").clone();
+	
+			addPhoneIcon
+				.sca(0.5*0.7)
+				.addTo(stage) 
+				.centerReg()
+				.pos(40,860)
+				.drag();
+			
+			var current;
+			addPhoneIcon.on("mousedown", function(e){
+				current = e.target;
+				
+					 var noOfUes = ueArray.length;
+					 var newUeId = ueArray[noOfUes-1].id + 1;
+					 var newUe = new UE(newUeId, addPhoneIcon.x, addPhoneIcon.y, 2);
+					 ueArray.push(newUe);
+					 guiAddUe(newUe, stage);
+				 
+				current.copy = newUe.gui;
+				 
+				current.copy.getChildAt(4).alp(0);
+				current.copy.getChildAt(5).alp(0);
+				
+				current.copy.getChildAt(0).animate({obj:{y:-110, scale:0.16}, time:500, loop:true, rewind:true, sequence:50});
+				 
+				stage.setChildIndex(current, stage.numChildren+1);
+				current.startX = copy.x = current.x;
+				current.startY = copy.y = current.y;
+				 
+				stage.update();
+			});	
+			
+			addPhoneIcon.on("pressup", function(e) {
+				current = e.currentTarget;
+
+				current.copy.getChildAt(4).alp(1);
+				current.copy.getChildAt(5).alp(1);
+				
+				swapProperties("x", current, current.copy);
+				swapProperties("y", current, current.copy);
+				
+				
+				getUeById(current.copy.getChildAt(3).name).setStartCell(cellArray);
+
+				stage.update();
+			});			
+					
 	
 			for(var i = 0; i < ueArray.length; i++){
-				
 				ueArray[i].gui.getChildAt(0).animate({obj:{y:-110, scale:0.16}, time:500, loop:true, rewind:true, sequence:50});
 			}
 				
@@ -1140,14 +1201,24 @@ function guiAddUe(ue, stage){
 	transferPNG.name = 'transferIcon_ue' + ue.id;
 	
 	//UE label
-	var ue_Label = new Label("UE_id_" + ue.id, 15);
-
+	var ue_Label = new Label("UE", 25);
 	
-	//add label to gui container
 	ue.gui.addChild(ue_Label); // id 4
-	ue_Label.pos(-25,-30);
+	ue_Label.pos(-17,-35);
 	ue_Label.top();
 	ue_Label.name = ue.id;
+	
+	var ue_Label_id = new Label(ue.id, 25);
+	
+	ue.gui.addChild(ue_Label_id); // id 5
+	
+	if(ue.id>9)
+		ue_Label_id.pos(-15,0);
+	else
+		ue_Label_id.pos(-8,0);
+		
+	ue_Label_id.top();
+	ue_Label_id.name = ue.id;
 	
 	//psQueueingTimerGui content
 	
@@ -1195,7 +1266,8 @@ function guiAddUe(ue, stage){
 		speechQueueingTimerGui.addChild(speechCqTime);
 		speechCqTime.pos(-27,40);
 	
-		
+
+	ue.gui.sca(0.7);
 	ue.gui.pos(ue.startPosX,ue.startPosY);
 	ue.gui.drag({currentTarget:true});
 	ue.gui.setBounds(0,0);

@@ -36,6 +36,7 @@ function getCellById(id){
 }
 
 function getUeById(id){
+	
 	var noOfUEs = ueArray.length;
 	for(var i = 0; i<noOfUEs; i++)
 	{
