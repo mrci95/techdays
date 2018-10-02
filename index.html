@@ -884,7 +884,7 @@ function UE(id, startPosX, startPosY, startCell){
 
 		// put your code here (you can delete this sample code)
 		
-		frame.loadAssets(["ue.png", "call.png", "transfer.png", "admissionqueue.png" ], "assets/");
+		frame.loadAssets(["ue.png", "call.png", "transfer.png", "admissionqueue.png", "rubbish.png" ], "assets/");
 
 		frame.on("complete", function() {
 			
@@ -899,6 +899,75 @@ function UE(id, startPosX, startPosY, startCell){
 			 var cell_3 = new Cell(3,10,617,652,'bottom');
 			 cellArray.push(cell_3);
 			 guiAddCell(cell_3, stage);
+			 
+			 //add ue
+			 
+			 
+			var addUeGui = new Rectangle(150,200,"white","white",0,40).addTo(stage).reg(0,300).pos(-50,1060).alp(0.5);
+			
+			var addUeLabel = new Label("ADD", 20).addTo(stage).pos(18,780);
+			var addUeLabel2 = new Label("UE", 20).addTo(stage).pos(24,925);
+			
+			var addUeIcon =  frame.asset("ue.png").clone();
+			var removeUeIcons = frame.asset("rubbish.png").clone();
+			
+			addUeIcon
+				.sca(0.5*0.7)
+				.addTo(stage) 
+				.centerReg()
+				.pos(40,860)
+				.drag();
+				
+			removeUeIcons
+				.sca(0.5)
+				.addTo(stage) 
+				.centerReg()
+				.pos(40,860)
+				.alp(0);
+			
+			var current;
+			addUeIcon.on("mousedown", function(e){
+				current = e.target;
+				
+					 var noOfUes = ueArray.length;
+					 var newUeId;
+					 if(noOfUes >0)
+						newUeId = ueArray[noOfUes-1].id + 1;
+					 else
+						newUeId = 1;
+						
+					 var newUe = new UE(newUeId, addUeIcon.x, addUeIcon.y, 2);
+					 ueArray.push(newUe);
+					 guiAddUe(newUe, stage);
+				 
+				current.copy = newUe.gui;
+				 
+				current.copy.getChildAt(4).alp(0);
+				current.copy.getChildAt(5).alp(0);
+				
+				current.copy.getChildAt(0).animate({obj:{y:-110, scale:0.16}, time:500, loop:true, rewind:true, sequence:50});
+				
+				current.startX = copy.x = current.x;
+				current.startY = copy.y = current.y;
+				
+				stage.update();
+			});	
+			
+			addUeIcon.on("pressup", function(e) {
+				current = e.currentTarget;
+
+				current.copy.getChildAt(4).alp(1);
+				current.copy.getChildAt(5).alp(1);
+				
+				swapProperties("x", current, current.copy);
+				swapProperties("y", current, current.copy);
+				
+				
+				getUeById(current.copy.getChildAt(3).name).setStartCell(cellArray);
+
+				refreshSidebar();
+				stage.update();
+			});			
 
 			 ueGuiContainer.addTo(stage).top();
 			 ueGuiContainer.pos(0,0);
@@ -915,58 +984,6 @@ function UE(id, startPosX, startPosY, startCell){
 			 var ue_3 = new UE(3, 900, 300, 2);
 			 ueArray.push(ue_3);
 			 guiAddUe(ue_3, stage);
-			 
-			 //add ue
-			 
-			 
-			var addUeGui = new Rectangle(150,200,"white","white",0,40).addTo(stage).reg(0,300).pos(-50,1060).alp(0.5);
-			var addPhoneIcon =  frame.asset("ue.png").clone();
-	
-			addPhoneIcon
-				.sca(0.5*0.7)
-				.addTo(stage) 
-				.centerReg()
-				.pos(40,860)
-				.drag();
-			
-			var current;
-			addPhoneIcon.on("mousedown", function(e){
-				current = e.target;
-				
-					 var noOfUes = ueArray.length;
-					 var newUeId = ueArray[noOfUes-1].id + 1;
-					 var newUe = new UE(newUeId, addPhoneIcon.x, addPhoneIcon.y, 2);
-					 ueArray.push(newUe);
-					 guiAddUe(newUe, stage);
-				 
-				current.copy = newUe.gui;
-				 
-				current.copy.getChildAt(4).alp(0);
-				current.copy.getChildAt(5).alp(0);
-				
-				current.copy.getChildAt(0).animate({obj:{y:-110, scale:0.16}, time:500, loop:true, rewind:true, sequence:50});
-				 
-				stage.setChildIndex(current, stage.numChildren+1);
-				current.startX = copy.x = current.x;
-				current.startY = copy.y = current.y;
-				 
-				stage.update();
-			});	
-			
-			addPhoneIcon.on("pressup", function(e) {
-				current = e.currentTarget;
-
-				current.copy.getChildAt(4).alp(1);
-				current.copy.getChildAt(5).alp(1);
-				
-				swapProperties("x", current, current.copy);
-				swapProperties("y", current, current.copy);
-				
-				
-				getUeById(current.copy.getChildAt(3).name).setStartCell(cellArray);
-
-				stage.update();
-			});			
 					
 	
 			for(var i = 0; i < ueArray.length; i++){
@@ -975,8 +992,17 @@ function UE(id, startPosX, startPosY, startCell){
 				
 			ueGuiContainer.on("pressup", function(e){ 
 			
+				removeUeIcons.alp(0);
+				addUeIcon.alp(1);
+				addUeLabel.text = "ADD";
+				addUeLabel.x = 18;
+				
 				if(!isNaN(e.target.name)){
-					if(!getUeById(e.target.name).psconnection && !getUeById(e.target.name).csconnection){ 
+					zog("del ue with id" + e.target.name);
+					if(getUeById(e.target.name).gui.hitTestRect(addUeGui)){
+						deleteUe(e.target.name);
+						
+					}else if(!getUeById(e.target.name).psconnection && !getUeById(e.target.name).csconnection){ 
 						getUeById(e.target.name).setStartCell(cellArray); 
 					}
 				}
@@ -997,6 +1023,12 @@ function UE(id, startPosX, startPosY, startCell){
 			});
 			
 			ueGuiContainer.on("mousedown", function(e){
+				
+				removeUeIcons.alp(1);
+				addUeIcon.alp(0);
+				addUeLabel.text = "REMOVE"
+				
+				addUeLabel.x = 4;
 				
 				draggingObject = true;
 				
@@ -1330,7 +1362,7 @@ function getUesListForDropDown(){
 }
 
 function getUeSettings(id){
-		//remove all not locked elements
+	//remove all not locked elements
 	var isInElements = false;
 	var element = ["UE", id, false,false,false,false]; //elementName, elementId, isLocked, ueInfoCollapse, ueActionsCollapse, ueSettings collapse
 	
@@ -1638,6 +1670,23 @@ function getTerminatingUesList(id){
 	
 }
 
+function deleteUe(id){
+	ueGuiContainer.removeChild(getUeById(id).gui);
+	
+	for(var i = 0; i < sidebarElements.length; i++){
+		if(sidebarElements[i][0] == "UE" && sidebarElements[i][1] == id){
+			sidebarElements.splice(i,1);
+		}
+	}
+	
+	for(var i = 0; i < ueArray.length; i++){
+		if(ueArray[i].id == id){
+			ueArray.splice(i,1);
+			return;
+		}
+	}
+}
+
 //testing
 
 function startQueueingTimeUE1(){
@@ -1725,8 +1774,8 @@ function closeFullscreen() {
 				<button type="button" class="btn-mainbar-1 btn-block custom-modal" >Show all logs<span style="padding-left: 15px;" class="far fa-file-alt"></span></button>
 			</div>
 			<div class="row" style="margin-left:0px; margin-right:0px; position:relative; top: 2px;">
-				<button onclick="openFullscreen();" type="button" class="btn-mainbar-1 btn-block" >Open full screen</button>
-				<button onclick="closeFullscreen();" type="button" class="btn-mainbar-1 btn-block" >Hide full screen</button>
+				<!--<button onclick="openFullscreen();" type="button" class="btn-mainbar-1 btn-block" >Open full screen</button>
+				<button onclick="closeFullscreen();" type="button" class="btn-mainbar-1 btn-block" >Hide full screen</button>-->
 			</div>
 		</div>
 	</div>
