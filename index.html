@@ -969,7 +969,7 @@ function UE(id, startPosX, startPosY, startCell){
 				stage.update();
 			});	
 
-			 ueGuiContainer.addTo(stage).top();
+			 ueGuiContainer.addTo(stage);
 			 ueGuiContainer.pos(0,0);
 			 
 			 var ue_1 = new UE(1, 400, 200, 1);
@@ -1068,6 +1068,8 @@ function UE(id, startPosX, startPosY, startCell){
 				getUeById(1).mobilityBehavior.addPoint(lastX,lastY);
 				getUeById(1).mobilityBehavior.drawLine();
 			});
+			
+			ueGuiContainer.top();
 			
 			stage.update(); // this is needed to show any changes
 		}); //end of complete 
@@ -1199,8 +1201,9 @@ function guiAddCell(cell, stage){
 
 function guiAddUe(ue, stage){
 	//create gui for whole UE interface
-	ue.gui = new Container().addTo(ueGuiContainer);
+	
 	ue.mobilityBehavior.gui = new Container().addTo(stage);
+	ue.gui = new Container().addTo(ueGuiContainer);
 	
 	ue_gui_icons = new Container().addTo(ue.gui); // id 0
 	ue_gui_icons.name = 'gui_icons_ue' + ue.id;
@@ -1374,7 +1377,7 @@ function getUesListForDropDown(){
 function getUeSettings(id){
 	//remove all not locked elements
 	var isInElements = false;
-	var element = ["UE", id, false,false,false,false]; //elementName, elementId, isLocked, ueInfoCollapse, ueActionsCollapse, ueSettings collapse
+	var element = ["UE", id, false,false,false,false,false]; //elementName, elementId, isLocked, ueInfoCollapse, ueActionsCollapse, ueSettings collapse, mobilityBehavior collapse
 	
 	for(var i = 0; i < sidebarElements.length; i++){
 		if(sidebarElements[i][0] == element[0] && sidebarElements[i][1] == element[1] && sidebarElements[i][2] == true){
@@ -1507,6 +1510,7 @@ function prepareUeSettingsPanel(id){
  var ueInfoCollapse = false;
  var ueActionsCollapse = false;
  var ueSettingCollapse = false;
+ var ueMobilityBehaviorCollapse = false;
 
  var finalInnerHtml ='';
  
@@ -1528,12 +1532,15 @@ function prepareUeSettingsPanel(id){
 			ueInfoCollapse = true;
 		}
 		
-		if(sidebarElements[i][4]){ //info collapse
+		if(sidebarElements[i][4]){ //actions collapse
 			ueActionsCollapse = true;
 		}
 		
-		if(sidebarElements[i][5]){ //info collapse
+		if(sidebarElements[i][5]){ //settings collapse
 			ueSettingCollapse = true;
+		}
+		if(sidebarElements[i][6]){ //mobility behavior collapse
+			ueMobilityBehaviorCollapse = true;
 		}
 	}
 	
@@ -1600,9 +1607,20 @@ function prepareUeSettingsPanel(id){
  var part28 = '_speechPriority"></div></div><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-sort-amount-up"></span>PS priority</div><div class="col-lg-4"><input style="text-align: center;" value="';
  var part29 = '" type="text" class="form-control" id="ue_';
  var part30 = '_psPriority"></div></div><div class="row setting"><div class="col-lg-12"><button onclick="setUeSettings(';
- var part31 = ')" class="btn btn-primary btn-block" type="button">Save settings<span style="padding-left: 15px;" class="fas fa-save"></span></button></div></div></div></div></div></div></div>';
+ var part31 = ')" class="btn btn-primary btn-block" type="button">Save settings<span style="padding-left: 15px;" class="fas fa-save"></span></button></div></div></div></div></div>';
  
- finalInnerHtml = part1 + id + part2 + id + part3 + part4 + part5 + id + part6 + glyphicon + part7 + id + part8 + id + part9 + id + part10 + id + part11 + getUeById(id).connectionInfo() + part12 + id + part13 + getUeById(id).startCell + part14 + id + part15 + getUeById(id).activeSetToString() + part16 + id + part17 + id + part18 + id + part19 + part20 + part21 + id + part22 + part23 + part24 + id + part25 + id + part26 + getUeById(id).speechPriority + part27 + id + part28 + getUeById(id).psPriority + part29 + id + part30 + id + part31;
+ var part32 = '<div class="panel panel-default"><div onclick="setCollapse(' + "'UE'" + "," + id + ",'mobilitybehavior'" + ')" data-toggle="collapse" href="#ue_' + id +'_Mobility" class="panel-heading collapsed" aria-expanded="false"><span style="padding-right: 15px;" class="fas fa-cog"></span>Mobility behavior</div><div id="ue_' + id; 
+ 
+ var part33;
+  if(ueMobilityBehaviorCollapse){
+	part33 = '_Mobility" class="panel-collapse collapse in" aria-expanded="true" style=""><div class="panel-body"><div class="row setting">' ;
+ }else{
+	part33 = '_Mobility" class="panel-collapse collapse" aria-expanded="false" style="height: 0px;"><div class="panel-body"><div class="row setting">';
+ }
+ 
+ var part34 = '<div class="col-lg-12"><button onclick="alert(' + "'mobility behavior')" + '" class="btn btn-primary btn-block" type="button">Edit mobility behavior<span style="padding-left: 15px;" class="fas fa-save"></span></button></div></div></div></div></div></div></div>';
+ 
+ finalInnerHtml = part1 + id + part2 + id + part3 + part4 + part5 + id + part6 + glyphicon + part7 + id + part8 + id + part9 + id + part10 + id + part11 + getUeById(id).connectionInfo() + part12 + id + part13 + getUeById(id).startCell + part14 + id + part15 + getUeById(id).activeSetToString() + part16 + id + part17 + id + part18 + id + part19 + part20 + part21 + id + part22 + part23 + part24 + id + part25 + id + part26 + getUeById(id).speechPriority + part27 + id + part28 + getUeById(id).psPriority + part29 + id + part30 + id + part31 + part32 + part33 + part34;
  
  return finalInnerHtml;
  
@@ -1624,6 +1642,9 @@ function setCollapse(elementName, elementId, panelName){
 				
 				if(panelName == "settings"){
 					sidebarElements[i][5] = !sidebarElements[i][5];
+				}
+				if(panelName == "mobilitybehavior"){
+					sidebarElements[i][6] = !sidebarElements[i][6];
 				}
 			}
 		}
