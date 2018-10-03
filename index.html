@@ -177,7 +177,7 @@ function Cell(id, resources, startPosX, startPosY, queuePlacement) {
 			}else{
 				zog("admission reject for speech in cell: " + this.id);
 				var queued = this.admissionQueue.addToQueue(ue,prio,queueingType.SPEECH);
-				return {continuation : false, admissionQueued: queued}; // TODO add to queue for speech
+				return {continuation : false, admissionQueued: queued};
 			}
 		break;
 		default:
@@ -967,7 +967,7 @@ function UE(id, startPosX, startPosY, startCell){
 
 				refreshSidebar();
 				stage.update();
-			});			
+			});	
 
 			 ueGuiContainer.addTo(stage).top();
 			 ueGuiContainer.pos(0,0);
@@ -992,34 +992,33 @@ function UE(id, startPosX, startPosY, startCell){
 				
 			ueGuiContainer.on("pressup", function(e){ 
 			
+				//UE released - hide removeUeIcon
 				removeUeIcons.alp(0);
 				addUeIcon.alp(1);
 				addUeLabel.text = "ADD";
 				addUeLabel.x = 18;
+				//==============================
 				
 				if(!isNaN(e.target.name)){
-					zog("del ue with id" + e.target.name);
+					
+					//Check if UE was released on removeUeIcon
 					if(getUeById(e.target.name).gui.hitTestRect(addUeGui)){
 						deleteUe(e.target.name);
-						
+					
+					//else update startCell if any connection is not established
 					}else if(!getUeById(e.target.name).psconnection && !getUeById(e.target.name).csconnection){ 
 						getUeById(e.target.name).setStartCell(cellArray); 
 					}
 				}
+				
 				
 				draggingObject = false;
 				refreshSidebar();
 			});
 			
 			ueGuiContainer.on("dblclick", function(e){ 
-				
-				
+				//TODO quick acces for ue actions
 				zog(e.target.name + " dblclick");
-				
-				
-				var mymodal = $('#modalAllLogs');
-				mymodal.find('.modal-body').html(getFullLogsList());
-				mymodal.modal('show');
 			});
 			
 			ueGuiContainer.on("mousedown", function(e){
@@ -1058,6 +1057,16 @@ function UE(id, startPosX, startPosY, startCell){
 					refreshSidebar();
 				}
 			});
+			
+			
+			//TODO prototype mobility behavior
+			/*stage.on("click", function() {
+			
+				var lastX = stage.mouseX;
+				var lastY = stage.mouseY;
+				
+				alert("mouseX: " + lastX + ", mouseY: " + lastY);
+			});*/
 			
 			stage.update(); // this is needed to show any changes
 		}); //end of complete 
@@ -1193,7 +1202,6 @@ function guiAddUe(ue, stage){
 	
 	ue_gui_icons = new Container().addTo(ue.gui); // id 0
 	ue_gui_icons.name = 'gui_icons_ue' + ue.id;
-	
 	//queueing timers 	
 	var psQueueingTimerGui = new Container().addTo(ue.gui); //id 1
 	psQueueingTimerGui.name = 'gui_psQueueingTimerGui_ue' + ue.id;
