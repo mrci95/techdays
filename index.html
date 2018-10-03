@@ -24,6 +24,7 @@
   <script src="js/queuePlace.js"></script>
   <script src="js/queue.js"></script>
   <script src="js/timer.js"></script>
+  <script src="js/mobilityBehavior.js"></script>
   
 
 
@@ -301,6 +302,8 @@ function UE(id, startPosX, startPosY, startCell){
 	
 	self.psQueueElement = new QueueElement();
 	self.speechQueueElement = new QueueElement();
+	
+	self.mobilityBehavior = new MobilityBehavior();
 	
 	this.connectionInfo = function(){
 		if(this.psconnection && this.csconnection)
@@ -900,9 +903,6 @@ function UE(id, startPosX, startPosY, startCell){
 			 cellArray.push(cell_3);
 			 guiAddCell(cell_3, stage);
 			 
-			 //add ue
-			 
-			 
 			var addUeGui = new Rectangle(150,200,"white","white",0,40).addTo(stage).reg(0,300).pos(-50,1060).alp(0.5);
 			
 			var addUeLabel = new Label("ADD", 20).addTo(stage).pos(18,780);
@@ -1060,13 +1060,14 @@ function UE(id, startPosX, startPosY, startCell){
 			
 			
 			//TODO prototype mobility behavior
-			/*stage.on("click", function() {
+			stage.on("click", function() {
 			
 				var lastX = stage.mouseX;
 				var lastY = stage.mouseY;
 				
-				alert("mouseX: " + lastX + ", mouseY: " + lastY);
-			});*/
+				getUeById(1).mobilityBehavior.addPoint(lastX,lastY);
+				getUeById(1).mobilityBehavior.drawLine();
+			});
 			
 			stage.update(); // this is needed to show any changes
 		}); //end of complete 
@@ -1199,6 +1200,7 @@ function guiAddCell(cell, stage){
 function guiAddUe(ue, stage){
 	//create gui for whole UE interface
 	ue.gui = new Container().addTo(ueGuiContainer);
+	ue.mobilityBehavior.gui = new Container().addTo(stage);
 	
 	ue_gui_icons = new Container().addTo(ue.gui); // id 0
 	ue_gui_icons.name = 'gui_icons_ue' + ue.id;
