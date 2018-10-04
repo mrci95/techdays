@@ -1065,8 +1065,10 @@ function UE(id, startPosX, startPosY, startCell){
 				var lastX = stage.mouseX;
 				var lastY = stage.mouseY;
 				
-				getUeById(1).mobilityBehavior.addPoint(lastX,lastY);
-				getUeById(1).mobilityBehavior.drawLine();
+				if(editMobilityBehaviorUe!=undefined){
+					getUeById(editMobilityBehaviorUe).mobilityBehavior.addPoint(lastX,lastY);
+					getUeById(editMobilityBehaviorUe).mobilityBehavior.drawLine();
+				}
 			});
 			
 			ueGuiContainer.top();
@@ -1613,14 +1615,31 @@ function prepareUeSettingsPanel(id){
  
  var part33;
   if(ueMobilityBehaviorCollapse){
-	part33 = '_Mobility" class="panel-collapse collapse in" aria-expanded="true" style=""><div class="panel-body"><div class="row setting">' ;
+	part33 = '_Mobility" class="panel-collapse collapse in" aria-expanded="true" style=""><div class="panel-body">' ;
  }else{
-	part33 = '_Mobility" class="panel-collapse collapse" aria-expanded="false" style="height: 0px;"><div class="panel-body"><div class="row setting">';
+	part33 = '_Mobility" class="panel-collapse collapse" aria-expanded="false" style="height: 0px;"><div class="panel-body">';
  }
+
+ var checkedShow;
+if(getUeById(id).mobilityBehavior.showed){
+	checkedShow = 'checked =""';
+}else{
+	checkedShow = '';
+}
+
+ var checkedLoop;
+if(getUeById(id).mobilityBehavior.loop){
+	checkedLoop = 'checked =""';
+}else{
+	checkedLoop = '';
+}
  
- var part34 = '<div class="col-lg-12"><button onclick="alert(' + "'mobility behavior')" + '" class="btn btn-primary btn-block" type="button">Edit mobility behavior<span style="padding-left: 15px;" class="fas fa-save"></span></button></div></div></div></div></div></div></div>';
+ var part34 = '<div class="row setting"><div class="col-lg-6"><div class="form-check"><label class="form-check-label"><input onclick="showMobilityBehavior(' + id + ')" type="checkbox" class="form-check-input"' + checkedShow + '> Show</label></div></div><div class="col-lg-6"><div class="form-check"><label class="form-check-label"><input onclick="loopMobilityBehavior(' + id + ')" type="checkbox" class="form-check-input"' + checkedLoop + '> Loop</label></div></div></div>';
+ var part35 = '<div class="row setting"><div class="col-lg-12">' + getEditMobilityBehaviorButton(id) + '</div></div>';
+ var part36 = '<div class="row setting"><div class="col-lg-12"><button onclick="clearMobilityBehavior(' + id + ');"  class="btn btn-primary btn-block" type="button">Clear mobility behavior<span style="padding-left: 15px;" class="fas fa-trash-alt"></span></button></div></div>';
+ var part37 = '<div class="row setting"><div class="col-lg-12"><button onclick="startMobilityBehavior(' + id + ');" class="btn btn-primary btn-block" type="button">Start mobility behavior<span style="padding-left: 15px;" class="fas fa-play-circle"></span></button></div></div></div></div></div></div></div>'
  
- finalInnerHtml = part1 + id + part2 + id + part3 + part4 + part5 + id + part6 + glyphicon + part7 + id + part8 + id + part9 + id + part10 + id + part11 + getUeById(id).connectionInfo() + part12 + id + part13 + getUeById(id).startCell + part14 + id + part15 + getUeById(id).activeSetToString() + part16 + id + part17 + id + part18 + id + part19 + part20 + part21 + id + part22 + part23 + part24 + id + part25 + id + part26 + getUeById(id).speechPriority + part27 + id + part28 + getUeById(id).psPriority + part29 + id + part30 + id + part31 + part32 + part33 + part34;
+ finalInnerHtml = part1 + id + part2 + id + part3 + part4 + part5 + id + part6 + glyphicon + part7 + id + part8 + id + part9 + id + part10 + id + part11 + getUeById(id).connectionInfo() + part12 + id + part13 + getUeById(id).startCell + part14 + id + part15 + getUeById(id).activeSetToString() + part16 + id + part17 + id + part18 + id + part19 + part20 + part21 + id + part22 + part23 + part24 + id + part25 + id + part26 + getUeById(id).speechPriority + part27 + id + part28 + getUeById(id).psPriority + part29 + id + part30 + id + part31 + part32 + part33 + part34 + part35 + part36 + part37;
  
  return finalInnerHtml;
  
@@ -1685,6 +1704,16 @@ function getStartPsButtonForUe(id){
 	return '<button onclick="getUeById(' + id + ').startPsConnection()" class="btn btn-primary btn-block" type="button" >Start PS<span style="padding-left: 15px;" class="fas fa-exchange-alt"></span></button>';
 }
 
+function getEditMobilityBehaviorButton(id){
+
+	if(editMobilityBehaviorUe == id){
+		return '<button onclick="stopEditMobilityBehavior(' + id + ');"  class="btn btn-danger btn-block" type="button">Stop edit mobility behavior<span style="padding-left: 15px;" class="fas fa-edit"></span></button>';
+	}
+	else{
+		return '<button onclick="editMobilityBehavior(' + id + ');"  class="btn btn-primary btn-block" type="button">Edit mobility behavior<span style="padding-left: 15px;" class="fas fa-edit"></span></button>';
+	}
+}
+
 function getTerminatingUesList(id){
 	
 	var listElementId = 'ue_' + id + '__terminatingUeList';
@@ -1716,6 +1745,71 @@ function deleteUe(id){
 			return;
 		}
 	}
+}
+
+function editMobilityBehavior(ueId){
+
+	var lastEditedUe = editMobilityBehaviorUe;
+	
+	editMobilityBehaviorUe = ueId;
+	ueGuiContainer.alp(0);
+	
+	getUeById(editMobilityBehaviorUe).mobilityBehavior.gui.alp(1);
+	
+	if(lastEditedUe != undefined &&  editMobilityBehaviorUe != undefined && editMobilityBehaviorUe != lastEditedUe ){
+
+		if(!getUeById(lastEditedUe).mobilityBehavior.showed)
+			getUeById(lastEditedUe).mobilityBehavior.gui.alp(0);
+	}
+	
+	refreshSidebar();
+}
+
+function stopEditMobilityBehavior(ueId){
+
+	editMobilityBehaviorUe=undefined;
+	
+	if(!getUeById(ueId).mobilityBehavior.showed)
+		getUeById(ueId).mobilityBehavior.gui.alp(0);
+	
+	ueGuiContainer.alp(1);
+	
+	refreshSidebar();
+}
+
+function showMobilityBehavior(ueId){
+	
+
+	getUeById(ueId).mobilityBehavior.showed = !getUeById(ueId).mobilityBehavior.showed;
+	
+	if(getUeById(ueId).mobilityBehavior.showed){
+		getUeById(ueId).mobilityBehavior.gui.alp(1);
+	}else{
+		
+		getUeById(ueId).mobilityBehavior.gui.alp(0);
+	}
+}
+
+function loopMobilityBehavior(ueId){
+
+	getUeById(ueId).mobilityBehavior.loop = !getUeById(ueId).mobilityBehavior.loop;
+	
+	getUeById(ueId).mobilityBehavior.drawLine();
+}
+
+function clearMobilityBehavior(ueId){
+	
+	alert("clearMobilityBehavior - ue"+ ueId);
+}
+
+function startMobilityBehavior(ueId){
+	
+	alert("startMobilityBehavior - ue"+ ueId);
+}
+
+function stopMobilityBehavior(ueId){
+	
+	alert("stopMobilityBehavior - ue"+ ueId);
 }
 
 //testing

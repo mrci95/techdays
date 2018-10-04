@@ -7,6 +7,7 @@ function MobilityBehavior(){
 	self.points = new Array();
 	
 	self.loop = false;
+	self.showed = false;
 	
 	self.addPoint = function(posx,posy){
 		self.points.push({x:posx, y:posy});

@@ -5,6 +5,8 @@ var cellArray = new Array();
 var ueGuiContainer = new Container();
 var ueArray = new Array();
 
+var editMobilityBehaviorUe = undefined;
+
 const connectionType = {
     EULHS: 'int_eul_hs',
     SPEECH: 'speech_12_2',
