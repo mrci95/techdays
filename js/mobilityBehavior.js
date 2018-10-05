@@ -62,8 +62,6 @@ function MobilityBehavior(ue){
 		if(self.points.length < 2)
 			return;
 		
-		
-		
 		self.moveUe();
 	}
 	
@@ -90,12 +88,21 @@ function MobilityBehavior(ue){
 		
 		var checkPoints = [];
 		
+		
 		for(var i = 0; i < self.points.length; i++){
-			checkPoints.push({props:{x:self.points[i].x, y:self.points[i].y}});
+			
+			var timeForDist = 0;
+			if(i == 0){
+				timeForDist = (dist(ueToMove.gui.x,ueToMove.gui.y,self.points[i].x, self.points[i].y))/0.2;
+			}else{
+				timeForDist = (dist(self.points[i].x, self.points[i].y,self.points[i-1].x, self.points[i-1].y))/0.2;
+			}
+			
+			
+			checkPoints.push({props:{x:self.points[i].x, y:self.points[i].y}, time: timeForDist});
 		}
 		
 		return checkPoints;
-		
 		
 	}
 	
