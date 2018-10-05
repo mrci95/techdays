@@ -1,6 +1,8 @@
-function MobilityBehavior(){
+function MobilityBehavior(ue){
 	
 	var self = this;
+	
+	var ueToMove = ue;
 	
 	self.gui = undefined;
 	
@@ -8,6 +10,8 @@ function MobilityBehavior(){
 	
 	self.loop = false;
 	self.showed = false;
+	
+	self.isMoving = false;
 	
 	self.addPoint = function(posx,posy){
 		self.points.push({x:posx, y:posy});
@@ -45,5 +49,56 @@ function MobilityBehavior(){
 		}
 		
 	}
+	
+	self.clear = function(){
+		self.gui.removeAllChildren();
+		
+		self.points = [];
+		
+	}
+	
+	self.start = function(){
+		
+		if(self.points.length < 2)
+			return;
+		
+		
+		
+		self.moveUe();
+	}
+	
+	self.stop = function(){
+		
+	}
+	
+	self.moveUe = function(){
+		
+		self.isMoving = true;
+		
+		var checkPoints = self.getCheckPointsList();
+		
+		ueToMove.gui.animate({ // circle will be the default object for the inner animations
+		  props: checkPoints,
+		  time:1000, // will be the default time for the inner animations
+		  ease:"linear", // will be the default ease for the inner animations
+		  call:function(){if(self.loop){self.moveUe();}}
+	   });
+		
+	}
+	
+	self.getCheckPointsList = function(){
+		
+		var checkPoints = [];
+		
+		for(var i = 0; i < self.points.length; i++){
+			checkPoints.push({props:{x:self.points[i].x, y:self.points[i].y}});
+		}
+		
+		return checkPoints;
+		
+		
+	}
+	
+	
 	
 }

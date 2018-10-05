@@ -6,6 +6,7 @@ var ueGuiContainer = new Container();
 var ueArray = new Array();
 
 var editMobilityBehaviorUe = undefined;
+var mobilityBehaviorUe
 
 const connectionType = {
     EULHS: 'int_eul_hs',

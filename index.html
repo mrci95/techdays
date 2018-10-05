@@ -303,7 +303,7 @@ function UE(id, startPosX, startPosY, startCell){
 	self.psQueueElement = new QueueElement();
 	self.speechQueueElement = new QueueElement();
 	
-	self.mobilityBehavior = new MobilityBehavior();
+	self.mobilityBehavior = new MobilityBehavior(self);
 	
 	this.connectionInfo = function(){
 		if(this.psconnection && this.csconnection)
@@ -1035,7 +1035,7 @@ function UE(id, startPosX, startPosY, startCell){
 			});
 			
 			interval(100, function(){
-				if(draggingObject)
+				if(draggingObject || anyMobilityBehaviorActive())
 				{
 					for(var i = 0; i < ueArray.length; i++){
 						ueArray[i].setCellsInRange();
@@ -1799,12 +1799,13 @@ function loopMobilityBehavior(ueId){
 
 function clearMobilityBehavior(ueId){
 	
-	alert("clearMobilityBehavior - ue"+ ueId);
+	getUeById(ueId).mobilityBehavior.clear();
 }
 
 function startMobilityBehavior(ueId){
+
+	getUeById(ueId).mobilityBehavior.start();
 	
-	alert("startMobilityBehavior - ue"+ ueId);
 }
 
 function stopMobilityBehavior(ueId){
@@ -1812,6 +1813,14 @@ function stopMobilityBehavior(ueId){
 	alert("stopMobilityBehavior - ue"+ ueId);
 }
 
+function anyMobilityBehaviorActive(){
+	for(var i = 0; i < ueArray.length; i++){
+		if(ueArray[i].mobilityBehavior.isMoving){
+			return true;
+		}
+	}
+	return false;
+}
 //testing
 
 function startQueueingTimeUE1(){
