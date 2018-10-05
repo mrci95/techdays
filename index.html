@@ -350,18 +350,17 @@ function UE(id, startPosX, startPosY, startCell){
 			}
 			
 			this.psconnection = true;
+			//TODO update connectionInfo on sidebar
+			//TODO update startPsButton
 		}
 		else
 		{
-			zog("step1");
 			if(this.startCell == undefined){
 				return false;
 			}
 			
 			var requestResult = getCellById(this.startCell).admissionReq(self,this.psPriority,connectionType.EULHS);
 			
-			
-			zog("step2");
 			
 			if(!requestResult.continuation){
 				DANGER('EULHS was not established for UE: ' + this.id + ' due to not enought resources in cell:  ' + this.startCell);
@@ -377,14 +376,12 @@ function UE(id, startPosX, startPosY, startCell){
 				return;
 			}
 			
-			
-			zog("step3");
-			
 			this.activeSet.push({cellId:this.startCell});
+			//TODO update actveSet info
 			this.psconnection = true;
 			
-			
-			zog("step4");
+			//TODO update connectionInfo on sidebar
+			//TODO update startPsButton
 		}
 		
 				
@@ -409,6 +406,9 @@ function UE(id, startPosX, startPosY, startCell){
 	this.stopPsConnection = function(){
 	
 		this.psconnection = false;
+		
+		//TODO update info about connection
+		//TODO update startPsButton
 		
 		for(var i = 0; i < this.activeSet.length; i++)
 		{
@@ -446,6 +446,8 @@ function UE(id, startPosX, startPosY, startCell){
 				}
 			}
 			this.csconnection = true;
+			//TODO update info about connection
+			//TODO update startSpeechButton
 		}
 		else
 		{
@@ -469,7 +471,11 @@ function UE(id, startPosX, startPosY, startCell){
 					return false;
 			}
 			this.activeSet.push({cellId:this.startCell});
+			//TODO update info about activeSet
 			this.csconnection = true;
+			//TODO update info about connection
+			//TODO update startSpeechButton
+			
 		}
 		
 		
@@ -504,6 +510,8 @@ function UE(id, startPosX, startPosY, startCell){
 			}
 			
 			this.csconnection = false;
+			//update info connection
+			//update startSpeechButton
 			
 			if(getUeById(this.terminatingUe).csconnection){
 				getUeById(this.terminatingUe).stopCsConnection();
@@ -559,6 +567,10 @@ function UE(id, startPosX, startPosY, startCell){
 		if(this.startCell != startCell){
 		
 			this.startCell = startCell;
+			
+			
+			//TODO here add side bar update for startCell
+			updateUeStartCellInfo(this.id);
 		
 			if(this.isAnyPsInQueue()){
 				zog('ps in queue');
@@ -780,6 +792,7 @@ function UE(id, startPosX, startPosY, startCell){
 		}else{
 			this.activeSet = [];
 		}
+		updateUeActiveSetInfo(this.id);
 	}
 	
 	this.getActiveSetIndexFromCellId = function(id){
@@ -1054,7 +1067,7 @@ function UE(id, startPosX, startPosY, startCell){
 							getUeById(ueArray[i].id).setStartCell(cellArray);
 						}
 					}
-					refreshSidebar();
+					//refreshSidebar();
 				}
 			});
 			
@@ -1644,6 +1657,31 @@ if(getUeById(id).mobilityBehavior.loop){
  return finalInnerHtml;
  
 }
+
+function updateUeStartCellInfo(ueId){
+	//check if info tab collapsed
+	
+	for(var i = 0; i < sidebarElements.length; i++){
+		
+		if(sidebarElements[i][0] == 'UE' && sidebarElements[i][1] == ueId && sidebarElements[i][3] == true){
+			var id = 'ue_'+ ueId+ '_startCell'
+			
+			document.getElementById(id).innerHTML = 'Cell_' + getUeById(ueId).startCell;
+		}
+	}
+}
+
+function updateUeActiveSetInfo(ueId){
+	for(var i = 0; i < sidebarElements.length; i++){
+		
+		if(sidebarElements[i][0] == 'UE' && sidebarElements[i][1] == ueId && sidebarElements[i][3] == true){
+			var id = 'ue_'+ ueId+ '_activeSet'
+			
+			document.getElementById(id).innerHTML = getUeById(ueId).activeSetToString();
+		}
+	}
+}
+
 
 function setCollapse(elementName, elementId, panelName){
 	
