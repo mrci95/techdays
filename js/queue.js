@@ -121,14 +121,28 @@ function Queue(cell){
 			
 			var elementType;
 			if(queuedConnection == queueingType.PS){
-				elementType = 'blue'
+				elementType = '#4286f4'
 			}else{
-				elementType = 'green';
+				elementType = '#59b75d';
 			}
 			
 			var queueElementShape =  new Circle(20, elementType);
 			queueElementShape.addTo(queueElement.gui);// add the circle to the container and center
 			queueElementShape.pos(0,0);
+			
+			var prioBcg = new createjs.Shape().set({x:0, y:0});
+			queueElement.gui.addChild(prioBcg);
+			prioBcg.graphics.f("white");
+			prioBcg.graphics.moveTo(0,0)
+			prioBcg.graphics.arc(0,0,20,0,180 * Math.PI/180);
+			
+			var queueElementUeId = new Label("UE"+ue.id,15,"black");
+			queueElementUeId.addTo(queueElement.gui);
+			queueElementUeId.pos(-12,-16);
+			
+			var queueElementPrio = new Label(prio,15,"black");
+			queueElementPrio.addTo(queueElement.gui);
+			queueElementPrio.pos(-4,3);
 			
 			queueElement.show();
 			
