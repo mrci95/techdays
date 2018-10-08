@@ -4,6 +4,8 @@ function MobilityBehavior(ue){
 	
 	var ueToMove = ue;
 	
+	var loopFinished = true;
+	
 	self.gui = undefined;
 	
 	self.points = new Array();
@@ -51,9 +53,12 @@ function MobilityBehavior(ue){
 	}
 	
 	self.clear = function(){
-		self.gui.removeAllChildren();
 		
-		self.points = [];
+		if(!self.isMoving){
+			self.gui.removeAllChildren();
+			
+			self.points = [];
+		}
 		
 	}
 	
@@ -62,25 +67,34 @@ function MobilityBehavior(ue){
 		if(self.points.length < 2)
 			return;
 		
+		if(!loopFinished)
+			return;
+		
+		self.isMoving = true;
+		
 		self.moveUe();
 	}
 	
 	self.stop = function(){
-		
+		self.isMoving = false;
 	}
+	
 	
 	self.moveUe = function(){
 		
-		self.isMoving = true;
-		
 		var checkPoints = self.getCheckPointsList();
 		
-		ueToMove.gui.animate({ // circle will be the default object for the inner animations
-		  props: checkPoints,
-		  time:1000, // will be the default time for the inner animations
-		  ease:"linear", // will be the default ease for the inner animations
-		  call:function(){if(self.loop){self.moveUe();}}
-	   });
+		if(self.isMoving){
+		
+			loopFinished = false;
+			
+			ueToMove.gui.animate({
+			  props: checkPoints,
+			  time:1000, 
+			  ease:"linear",
+			  call:function(){loopFinished = true; if(self.loop){self.moveUe();}else{self.isMoving = false; refreshSidebar();}  }
+			});
+		}
 		
 	}
 	
