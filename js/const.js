@@ -24,6 +24,7 @@ const queueLength = 10;
 
 const cellRange = 250;
 const queuingTime = 9090;
+const highPrioParam = 8;
 
 
 function getCellById(id){

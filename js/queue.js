@@ -4,7 +4,7 @@ function Queue(cell){
 	
 	self.cell = cell;
 	
-	self.queue = new Array(new Array(), new Array(), new Array(), new Array(), new Array(), new Array(), new Array(), new Array(), new Array(), new Array());
+	self.queue = new Array(new Array(), new Array(), new Array(), new Array(), new Array(), new Array(), new Array(), new Array(), new Array(), new Array(), new Array(), new Array(), new Array(), new Array(), new Array());
 	
 	self.queuePlaces = new Array();
 	
@@ -51,6 +51,10 @@ function Queue(cell){
 		
 		if(self.alreadyInQueue(ue, prio, queuedConnection)){
 				return 'alreadyInQueue';
+		}
+
+		if(prio > highPrioParam && self.usersInQueue() > 0){
+			return 'lowPrioReject';
 		}
 		
 		var queuedUser = [ue.id, prio, queuedConnection ];
