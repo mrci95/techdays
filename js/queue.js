@@ -114,7 +114,6 @@ function Queue(cell){
 	}
 	
 	self.addAdmissionQueueElement = function(ue, prio, queuedConnection){
-		
 			
 			var queueElement = new QueueElement(ue, prio, queuedConnection);
 			

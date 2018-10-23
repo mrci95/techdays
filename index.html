@@ -125,6 +125,10 @@
     left:2%;
     width: 96%;
 }
+
+form {
+    display: inline; 
+}
 	
 
 </style>
@@ -407,6 +411,7 @@ function UE(id, startPosX, startPosY, startCell){
 		
 		this.setCellsInRange();
 		this.updateActiveSet(cellArray);
+		this.setStartCell(cellArray);
 		
 		this.gui.getChildAt(0).getChildAt(1).animate({obj:{alpha:0}, time:300});
 		
@@ -511,6 +516,7 @@ function UE(id, startPosX, startPosY, startCell){
 			
 			this.setCellsInRange();
 			this.updateActiveSet(cellArray);
+			this.setStartCell(cellArray);
 			
 			this.gui.getChildAt(0).getChildAt(0).animate({obj:{alpha:0}, time:500});
 		}
@@ -870,7 +876,7 @@ function UE(id, startPosX, startPosY, startCell){
 
 	var scaling = "holder"; // this will resize to fit inside the screen dimensions
 	var width = 1280;
-	var height = 1060;
+	var height = 1228;
 	var color = ERICSSON_BLUE; // ZIM colors like green, blue, pink, faint, clear, etc. available globally
 	var outerColor = dark; // any HTML colors like "violet", "#333", etc. fine to use
 
@@ -890,7 +896,7 @@ function UE(id, startPosX, startPosY, startCell){
 
 		// put your code here (you can delete this sample code)
 		
-		frame.loadAssets(["ue.png", "call.png", "transfer.png", "admissionqueue.png", "rubbish.png" ], "assets/");
+		frame.loadAssets(["ue.png", "call.png", "transfer.png", "admissionqueue.png", "rubbish.png", "admissionqueuebackgroundR.png", "admissionqueuebackgroundL.png", "admissionqueuebackgroundB.png", "background.png" ], "assets/");
 
 		frame.on("complete", function() {
 			
@@ -1076,6 +1082,12 @@ function UE(id, startPosX, startPosY, startCell){
 			
 			ueGuiContainer.top();
 			
+			
+			
+			var backgroundMap = frame.asset("background.png").clone().sca(1.3).pos(-300,0);
+			stage.addChild(backgroundMap);
+			backgroundMap.bot();
+			
 			stage.update(); // this is needed to show any changes
 		}); //end of complete 
 		
@@ -1107,7 +1119,11 @@ function guiAddCell(cell, stage){
 	
 	switch(cell.queuePlacement){
 		case 'left':
-			admissionQueueShapeBcg = new Rectangle(cellRange+100,cellRange*2,"white","white",0,20).addTo(admissionQueueGui).pos(-cellRange - 100, -cellRange);
+		
+			admissionQueueShapeBcg = frame.asset("admissionqueuebackgroundL.png").clone().pos(-cellRange - 99, -cellRange).sca(1.14);
+			admissionQueueGui.addChild(admissionQueueShapeBcg);
+		
+			//admissionQueueShapeBcg = new Rectangle(cellRange+100,cellRange*2,"white","white",0,20).addTo(admissionQueueGui).pos(-cellRange - 100, -cellRange);
 			
 			admissionQueueShape = frame.asset("admissionqueue.png").clone();
 			
@@ -1132,7 +1148,10 @@ function guiAddCell(cell, stage){
 		
 		case 'right':
 		
-			admissionQueueShapeBcg = new Rectangle(cellRange+100,cellRange*2,"white","white",0,20).addTo(admissionQueueGui).pos(0,-cellRange);
+			admissionQueueShapeBcg = frame.asset("admissionqueuebackgroundR.png").clone().pos(24,-cellRange).sca(1.14);
+			admissionQueueGui.addChild(admissionQueueShapeBcg);
+		
+			//admissionQueueShapeBcg = new Rectangle(cellRange+100,cellRange*2,"white","white",0,20).addTo(admissionQueueGui).pos(0,-cellRange);
 			
 			admissionQueueShape = frame.asset("admissionqueue.png").clone();
 			
@@ -1156,8 +1175,12 @@ function guiAddCell(cell, stage){
 		break;
 		
 		case 'bottom':
+		
 			
-			admissionQueueShapeBcg = new Rectangle(cellRange*2,cellRange+100,"white","white",0,20).addTo(admissionQueueGui).pos(-cellRange,0);
+			admissionQueueShapeBcg = frame.asset("admissionqueuebackgroundB.png").clone().pos(-cellRange,24).sca(1.14);
+			admissionQueueGui.addChild(admissionQueueShapeBcg);
+			
+			//admissionQueueShapeBcg = new Rectangle(cellRange*2,cellRange+100,"white","white",0,20).addTo(admissionQueueGui).pos(-cellRange,0);
 		
 			admissionQueueShape = frame.asset("admissionqueue.png").clone();
 			
@@ -1183,9 +1206,9 @@ function guiAddCell(cell, stage){
 		break;
 	}
 	
-	var admissionQueueMask = new Circle(cellRange, ERICSSON_BLUE);
+	/*var admissionQueueMask = new Circle(cellRange, ERICSSON_BLUE);
 	admissionQueueMask.addTo(cell.admissionQueue.admissionQueueContainer);// add the circle to the container and center
-	admissionQueueMask.pos(0,0);
+	admissionQueueMask.pos(0,0);*/
 	
 	//add label to gui container
 	
@@ -1365,6 +1388,19 @@ function setCellSettings(id){
 	var cell = getCellById(id);
 	cell.hsAdmUsers = document.getElementById(hsAdmUsersHtmlId).value;
 	cell.speechAdmUsers = document.getElementById(speechAdmUsersHtmlId).value;
+	
+	
+	$(document).ready(function(){
+	  var savedButton = '#cell_' + id + '_saveSettingsButton';
+	  
+      $(savedButton).html('Saved<span style="padding-left: 15px;" class="fas fa-save"></span>').attr("class","btn btn-success btn-block");
+	  
+	  setTimeout(function(){ 
+		$(savedButton).html('Save settings<span style="padding-left: 15px;" class="fas fa-save"></span>').attr("class","btn btn-primary btn-block");
+	  }, 1000);
+	  
+	});
+	
 }
 
 function getUesListForDropDown(){
@@ -1407,8 +1443,22 @@ function getUeSettings(id){
 }
 
 function setUeSettings(id){
-
-	alert("ueSetting" + id);
+	
+	getUeById(id).psPriority = document.getElementById("ue_" + id + "_psPriority").value;
+	getUeById(id).speechPriority = document.getElementById("ue_" + id + "_speechPriority").value;
+	
+	
+	$(document).ready(function(){
+	  var savedButton = '#ue_' + id + '_saveSettingsButton';
+	  
+      $(savedButton).html('Saved<span style="padding-left: 15px;" class="fas fa-save"></span>').attr("class","btn btn-success btn-block");
+	  
+	  setTimeout(function(){ 
+		$(savedButton).html('Save settings<span style="padding-left: 15px;" class="fas fa-save"></span>').attr("class","btn btn-primary btn-block");
+	  }, 1000);
+	  
+	});
+	
 }
 
 function lockPanel(panelType, id){
@@ -1498,11 +1548,11 @@ function prepareCellSettingsPanel(id){
 	cellSettingsCollapseHtml = '<div id="cell_' + id + '_settings" class="panel-collapse collapse" aria-expanded="false" style="height:0px;">'
  }
  
- var part10 = '</div></div></div></div></div><div class="panel panel-default"><div onclick="setCollapse(' + "'Cell'" + ',' + id + ",'settings'" + ')" data-toggle="collapse" href="#cell_' + id + '_settings" class="panel-heading"><span style="padding-right: 15px;" class="fas fa-cog"></span>Cell settings</div>' + cellSettingsCollapseHtml + '<div class="panel-body"><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-users-cog"></span>MaxHsAdmUsers</div><div class="col-lg-4"><input style="text-align: center;" value="'
- var part11 = '" type="text" class="form-control" id="cell_';
- var part12 = '_hsAdmUsersValue"></div></div><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-users-cog"></span>MaxSpeechAdmUsers</div><div class="col-lg-4"><input style="text-align: center;" value="';
- var part13 = '" type="text" class="form-control" id="cell_';
- var part14 = '_speechAdmUsersValue"></div></div><div class="row setting"><div class="col-lg-12"><button onclick="setCellSettings(';
+ var part10 = '</div></div></div></div></div><div class="panel panel-default"><div onclick="setCollapse(' + "'Cell'" + ',' + id + ",'settings'" + ')" data-toggle="collapse" href="#cell_' + id + '_settings" class="panel-heading"><span style="padding-right: 15px;" class="fas fa-cog"></span>Cell settings</div>' + cellSettingsCollapseHtml + '<div class="panel-body"><div class="row setting"><div class="col-lg-6"><span style="padding-right: 15px;" class="fas fa-users-cog"></span>MaxHsAdmUsers</div><div class="col-lg-6"><form oninput="result.value=parseInt(a.value)"><input type="range" name="a" class="custom-range" min="0" max="15" value="'
+ var part11 = '" id="cell_';
+ var part12 = '_hsAdmUsersValue"><output name="result">' + getCellById(id).hsAdmUsers + '</output></form></div></div><div class="row setting"><div class="col-lg-6"><span style="padding-right: 15px;" class="fas fa-users-cog"></span>MaxSpeechAdmUsers</div><div class="col-lg-6"><form oninput="result.value=parseInt(a.value)"><input type="range" name="a" class="custom-range" min="0" max="15" value="';
+ var part13 = '" id="cell_';
+ var part14 = '_speechAdmUsersValue"><output name="result">' + getCellById(id).speechAdmUsers + '</output></form></div></div><div class="row setting"><div class="col-lg-12"><button id="cell_' + id + '_saveSettingsButton" onclick="setCellSettings(';
  var part15 = ')" class="btn btn-primary btn-block" type="button">Save settings<span style="padding-left: 15px;" class="fas fa-save"></span></button></div></div></div></div></div></div></div>';
  
  finalInnerHtml = part1 + id + part2 + id + part3 + part4 + part5 + id + part6 + glyphicon + part7 + id + part8 + getCellById(id).eulHsUsersCount + part9 + getCellById(id).speechUsersCount + part10 + getCellById(id).hsAdmUsers + part11 + id + part12 + getCellById(id).speechAdmUsers + part13 + id + part14 + id + part15;
@@ -1603,15 +1653,15 @@ function prepareUeSettingsPanel(id){
  var part26;
  
  if(ueSettingCollapse){
-	part26 = '_Settings" class="panel-collapse collapse in" aria-expanded="true" style=""><div class="panel-body"><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-sort-amount-up"></span>Speech priority</div><div class="col-lg-4"><input style="text-align: center;" value="';
+	part26 = '_Settings" class="panel-collapse collapse in" aria-expanded="true" style=""><div class="panel-body"><div class="row setting"><div class="col-lg-6"><span style="padding-right: 15px;" class="fas fa-sort-amount-up"></span>Speech priority</div><div class="col-lg-6"><form oninput="result.value=parseInt(a.value)"><input type="range" name="a" class="custom-range" min="0" max="15" value="';
  }else{
-	part26 = '_Settings" class="panel-collapse collapse" aria-expanded="false" style="height:0px;"><div class="panel-body"><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-sort-amount-up"></span>Speech priority</div><div class="col-lg-4"><input style="text-align: center;" value="';
+	part26 = '_Settings" class="panel-collapse collapse" aria-expanded="false" style="height:0px;"><div class="panel-body"><div class="row setting"><div class="col-lg-6"><span style="padding-right: 15px;" class="fas fa-sort-amount-up"></span>Speech priority</div><div class="col-lg-6"><form oninput="result.value=parseInt(a.value)"><input type="range" name="a" class="custom-range" min="0" max="15" value="';
  }
  
- var part27 = '" type="text" class="form-control" id="ue_';
- var part28 = '_speechPriority"></div></div><div class="row setting"><div class="col-lg-8"><span style="padding-right: 15px;" class="fas fa-sort-amount-up"></span>PS priority</div><div class="col-lg-4"><input style="text-align: center;" value="';
- var part29 = '" type="text" class="form-control" id="ue_';
- var part30 = '_psPriority"></div></div><div class="row setting"><div class="col-lg-12"><button onclick="setUeSettings(';
+ var part27 = '" id="ue_';
+ var part28 = '_speechPriority"><output name="result">' + getUeById(id).speechPriority + '</output></form></div></div><div class="row setting"><div class="col-lg-6"><span style="padding-right: 15px;" class="fas fa-sort-amount-up"></span>PS priority</div><div class="col-lg-6"><form oninput="result.value=parseInt(a.value)"><input type="range" name="a" class="custom-range" min="0" max="15" value="';
+ var part29 = '" id="ue_';
+ var part30 = '_psPriority"><output name="result">' + getUeById(id).psPriority + '</output></form></div></div><div class="row setting"><div class="col-lg-12"><button id="ue_' + id + '_saveSettingsButton" onclick="setUeSettings(';
  var part31 = ')" class="btn btn-primary btn-block" type="button">Save settings<span style="padding-left: 15px;" class="fas fa-save"></span></button></div></div></div></div></div>';
  
  var part32 = '<div class="panel panel-default"><div onclick="setCollapse(' + "'UE'" + "," + id + ",'mobilitybehavior'" + ')" data-toggle="collapse" href="#ue_' + id +'_Mobility" class="panel-heading collapsed" aria-expanded="false"><span style="padding-right: 15px;" class="fas fa-cog"></span>Mobility behavior</div><div id="ue_' + id; 
@@ -1949,8 +1999,8 @@ function closeFullscreen() {
 				<button type="button" class="btn-mainbar-1 btn-block custom-modal" >Show all logs<span style="padding-left: 15px;" class="far fa-file-alt"></span></button>
 			</div>
 			<div class="row" style="margin-left:0px; margin-right:0px; position:relative; top: 2px;">
-				<!--<button onclick="openFullscreen();" type="button" class="btn-mainbar-1 btn-block" >Open full screen</button>
-				<button onclick="closeFullscreen();" type="button" class="btn-mainbar-1 btn-block" >Hide full screen</button>-->
+				<!--<button onclick="startQueueingTimeUE1();" type="button" class="btn-mainbar-1 btn-block" >Open full screen</button>
+				<button onclick="stopQueueingTimeUE1();" type="button" class="btn-mainbar-1 btn-block" >Hide full screen</button>-->
 			</div>
 		</div>
 	</div>
