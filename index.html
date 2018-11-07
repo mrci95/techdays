@@ -1386,9 +1386,11 @@ function setCellSettings(id){
 	var speechAdmUsersHtmlId = 'cell_' + id + '_speechAdmUsersValue';
 	
 	var cell = getCellById(id);
+	
 	cell.hsAdmUsers = document.getElementById(hsAdmUsersHtmlId).value;
 	cell.speechAdmUsers = document.getElementById(speechAdmUsersHtmlId).value;
 	
+	INFO("Cell_" + id + " settings saved(hsAdmUsers: " + cell.hsAdmUsers + ",speechAdmUsers: " + cell.speechAdmUsers +")");
 	
 	$(document).ready(function(){
 	  var savedButton = '#cell_' + id + '_saveSettingsButton';

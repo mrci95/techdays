@@ -58,6 +58,8 @@ function INFO(str){
 	var logItem = ['alert-info',fullDateFormat,currentTime, str];
 	
 	logs.push(logItem);
+	
+	refreshSidebar();
 }
 
 function DANGER(str){
@@ -68,6 +70,8 @@ function DANGER(str){
 	var logItem = ['alert-danger',fullDateFormat,currentTime, str];
 	
 	logs.push(logItem);
+	
+	refreshSidebar();
 
 }
 
@@ -79,6 +83,8 @@ function WARNING(str){
 	var logItem = ['alert-warning',fullDateFormat,currentTime, str];
 	
 	logs.push(logItem);
+	
+	refreshSidebar();
 }
 
 function SUCCESS(str){
@@ -89,6 +95,8 @@ function SUCCESS(str){
 	var logItem = ['alert-success',fullDateFormat,currentTime, str];
 	
 	logs.push(logItem);
+	
+	refreshSidebar();
 }
 
 function getFullDateFormat(){
