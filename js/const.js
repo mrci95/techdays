@@ -14,10 +14,26 @@ const connectionType = {
     SPEECHEULHS: 'int_eul_hs_speech_12_2',
 };
 
+
+
 const queueingType = {
 	PS: 'ps',
 	SPEECH: 'speech'
 };
+
+function queueingTypeToString(cqType){
+	
+	switch(cqType){
+		case queueingType.PS:
+			return "PS connection";
+			break;
+		case queueingType.SPEECH:
+			return "SPEECH connection";
+			
+		default:
+			return;
+	}
+}
 
 const queueLength = 10;
 

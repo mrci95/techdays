@@ -46,10 +46,12 @@ function Queue(cell){
 	
 	self.addToQueue = function(ue, prio, queuedConnection){
 		if(self.usersInQueue() >= queueLength){
+				WARNING('Queue full. UE: ' + ue.id + ' was not in the admission queue in Cell_' + self.cell.id + '(prio: '+ prio + ', connection: ' +  +')');
 				return 'queueFull';
 		}
 		
 		if(self.alreadyInQueue(ue, prio, queuedConnection)){
+				WARNING('UE: ' + ue.id + ' already in the admission queue in Cell_' + self.cell.id + '(prio: '+ prio + ', connection: ' +  +')');
 				return 'alreadyInQueue';
 		}
 
@@ -61,14 +63,7 @@ function Queue(cell){
 		
 		self.queue[prio].push(queuedUser);
 		
-		var conn;
-		if( queuedConnection == queueingType.PS){
-			conn = "PS";
-		}else{
-			conn = "CS";
-		}
-		
-		DANGER('UE: ' + ue.id + ' was added to the admission queue with priority = ' + prio + ' for ' + conn + ' connection');
+		SUCCESS('UE: ' + ue.id + ' was added to the admission queue with priority = ' + prio + ' for ' + queueingTypeToString(queuedConnection));
 		
 		if(self.usersInQueue() == 1){
 				self.cell.showQueue();
@@ -97,7 +92,7 @@ function Queue(cell){
 				self.queueElements.splice(elementIndex,1); 
 				self.updateElementsPosition();
 				
-				
+				SUCCESS('UE: ' + ue.id + ' was removed from the admission queue');
 				
 				if(self.usersInQueue() < 1){
 						setTimeout(function(){ if(self.usersInQueue() < 1){ self.cell.hideQueue(); } }, 5000);

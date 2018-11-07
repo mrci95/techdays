@@ -8,6 +8,7 @@ function Timer(queueingTime, ue, timerType){
 	
 	self.queueingTime = queueingTime;
 	self.running = false;
+	self.timeout = false;
 	self.startTime = 0;
 	self.stopTime = 0;
 	self.timeout;
@@ -20,6 +21,10 @@ function Timer(queueingTime, ue, timerType){
 			
 			
 			self.running = true;
+			self.timeout = false;
+			
+			zog("start timer timout " + self.timeout);
+			
 			var d = new Date();
 			self.startTime = d.getTime();
 			
@@ -36,7 +41,7 @@ function Timer(queueingTime, ue, timerType){
 				
 				self.clockTick = setInterval(function(){ self.ue.updatePsQueuingTimer(); }, 1000);
 			
-				self.timeout = setTimeout(function(){ zog("ue" +  self.ue.id + " timeout for ps"); self.ue.stopPsQueueingTime(); self.ue.deleteFromQueue(queueingType.PS); }, self.queueingTime);
+				self.timeout = setTimeout(function(){ WARNING('Timeout on ps queuing timer for UE ' + self.ue.id ); this.timeout = true; self.ue.stopPsQueueingTime(); self.ue.deleteFromQueue(queueingType.PS); }, self.queueingTime);
 				
 			}else{
 				
@@ -47,9 +52,10 @@ function Timer(queueingTime, ue, timerType){
 			
 				self.clockTick = setInterval(function(){ self.ue.updateSpeechQueuingTimer(); }, 1000); 
 			
-				self.timeout = setTimeout(function(){ zog("ue" +  self.ue.id + " timeout for speech"); self.ue.stopSpeechQueueingTime(); self.ue.deleteFromQueue(queueingType.SPEECH); }, self.queueingTime);
+				self.timeout = setTimeout(function(){ WARNING('Timeout on ps queuing timer for UE ' + self.ue.id ); this.timeout = true; self.ue.stopSpeechQueueingTime(); self.ue.deleteFromQueue(queueingType.SPEECH); }, self.queueingTime);
 				
 			}
+			SUCCESS('Start ' + self.timerType + ' queuing timer for UE ' + self.ue.id);
 		}
 	}
 	
@@ -58,6 +64,9 @@ function Timer(queueingTime, ue, timerType){
 	}
 	
 	self.stopTimer = function(){
+		
+		zog("stop timer timout " + self.timeout);
+		
 		if(self.running){
 			
 			
@@ -66,6 +75,8 @@ function Timer(queueingTime, ue, timerType){
 			self.stopTime = d.getTime();
 			
 			var diff = self.stopTime - self.startTime;
+			
+			SUCCESS('Stop ' + self.timerType + ' queuing timer for UE ' + self.ue.id + '. Time spend in queue: ' + self.getCurrentTimeString());
 			
 			
 			

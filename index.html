@@ -172,6 +172,8 @@ function Cell(id, resources, startPosX, startPosY, queuePlacement) {
 				return {continuation : true, admissionQueued: false};
 			}else{
 				zog("admission reject for ps in cell: " + this.id);
+				
+				DANGER('CELL_' + this.id + '. Admission reject due to not enought PS resources.');
 				var queued = this.admissionQueue.addToQueue(ue,prio,queueingType.PS);
 				return {continuation : false, admissionQueued: queued};
 			}
@@ -181,6 +183,8 @@ function Cell(id, resources, startPosX, startPosY, queuePlacement) {
 				return {continuation : true, admissionQueued: false};
 			}else{
 				zog("admission reject for speech in cell: " + this.id);
+				
+				DANGER('CELL_' + this.id + '. Admission reject due to not enought CS resources.');
 				var queued = this.admissionQueue.addToQueue(ue,prio,queueingType.SPEECH);
 				return {continuation : false, admissionQueued: queued};
 			}
@@ -669,18 +673,22 @@ function UE(id, startPosX, startPosY, startCell){
 	
 		switch(this.connectionInfo()){
 			case connectionType.EULHS: 
-				zog("increase user count for cell " + cell + " by soho addition");
 				getCellById(cell).eulHsUsersCount++;
+				SUCCESS("UE_" + this.id + ". Soft handover addition. Add Cell_" + cell + " to Active Set");
 				return true;
 			break;
 			case connectionType.SPEECH:
 				getCellById(cell).speechUsersCount++;
+				
+				SUCCESS("UE_" + this.id + ". Soft handover addition. Add Cell_" + cell + " to Active Set");
 				return true;
 			break;
 			
 			case connectionType.SPEECHEULHS: 
 				getCellById(cell).eulHsUsersCount++;
 				getCellById(cell).speechUsersCount++;
+				
+				SUCCESS("UE_" + this.id + ". Soft handover addition. Add Cell_" + cell + " to Active Set");
 				return true;
 			break;
 			
@@ -695,16 +703,22 @@ function UE(id, startPosX, startPosY, startCell){
 			case connectionType.EULHS:
 			
 				getCellById(cell).admissionDecreaseLoad(connectionType.EULHS);
+				
+				SUCCESS("UE_" + this.id + ". Soft handover deletion. Remove Cell_" + cell + " to Active Set");
 				return true;
 			break;
 			case connectionType.SPEECH:
 
 				getCellById(cell).admissionDecreaseLoad(connectionType.SPEECH);
+				
+				SUCCESS("UE_" + this.id + ". Soft handover deletion. Remove Cell_" + cell + " to Active Set");
 				return true;
 			break;
 			
 			case connectionType.SPEECHEULHS: 
 				getCellById(cell).admissionDecreaseLoad(connectionType.SPEECHEULHS);
+				
+				SUCCESS("UE_" + this.id + ". Soft handover deletion. Remove Cell_" + cell + " to Active Set");
 				return true;
 			break;
 			
@@ -1450,6 +1464,9 @@ function setUeSettings(id){
 	getUeById(id).speechPriority = document.getElementById("ue_" + id + "_speechPriority").value;
 	
 	
+	
+	INFO("UE_" + id + " settings saved(psPriority: " + getUeById(id).psPriority + ",speechPriority: " + getUeById(id).speechPriority +")");
+	
 	$(document).ready(function(){
 	  var savedButton = '#ue_' + id + '_saveSettingsButton';
 	  
@@ -2022,6 +2039,7 @@ function closeFullscreen() {
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+		<button type="button" onclick="clearLogs();" class="btn btn-default" >Clear logs monitor</button>
       </div>
     </div>
 

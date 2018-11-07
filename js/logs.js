@@ -22,6 +22,19 @@ function getShortLogsList(){
 	
 }
 
+function clearLogs(){
+	
+	logs = [];
+	
+	$(function(){
+		var mymodal = $('#modalAllLogs');
+		mymodal.find('.modal-body').html(getFullLogsList());
+		mymodal.modal('show');
+	})
+	
+	document.getElementById('logsShort').innerHTML = getShortLogsList();
+}
+
 function getFullLogsList(){
 	
 	var finalHtml = '';
@@ -59,7 +72,9 @@ function INFO(str){
 	
 	logs.push(logItem);
 	
-	refreshSidebar();
+	
+	
+	document.getElementById('logsShort').innerHTML = getShortLogsList();
 }
 
 function DANGER(str){
@@ -71,7 +86,9 @@ function DANGER(str){
 	
 	logs.push(logItem);
 	
-	refreshSidebar();
+	
+	
+	document.getElementById('logsShort').innerHTML = getShortLogsList();
 
 }
 
@@ -84,7 +101,9 @@ function WARNING(str){
 	
 	logs.push(logItem);
 	
-	refreshSidebar();
+	
+	
+	document.getElementById('logsShort').innerHTML = getShortLogsList();
 }
 
 function SUCCESS(str){
@@ -96,7 +115,9 @@ function SUCCESS(str){
 	
 	logs.push(logItem);
 	
-	refreshSidebar();
+	
+	
+	document.getElementById('logsShort').innerHTML = getShortLogsList();
 }
 
 function getFullDateFormat(){
