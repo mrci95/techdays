@@ -155,6 +155,7 @@ function Cell(id, resources, startPosX, startPosY, queuePlacement) {
   this.queuePlacement = queuePlacement;
   this.startPosX = startPosX;
   this.startPosY = startPosY;
+  this.resourceLack = false;
   
   this.admissionQueue = new Queue(self);
   
@@ -257,9 +258,37 @@ function Cell(id, resources, startPosX, startPosY, queuePlacement) {
 			break;
 	}
 	
+	this.resourceLack = this.checkIfLackOfResources();
+	this.resourceAvailableGUI();
+	
 	if(this.admissionQueue.usersInQueue() > 0){
 		this.checkResourcesForQueuedUser();
 	}
+  }
+  
+  this.admissionIncreaseLoad = function(connection){
+  
+	switch(connection){
+		case connectionType.EULHS:
+				this.eulHsUsersCount++;
+			break;
+		
+		case connectionType.SPEECH:
+				this.speechUsersCount++;
+			break;
+			
+		case connectionType.SPEECHEULHS:
+				this.eulHsUsersCount++;
+				this.speechUsersCount++;
+			break;
+			
+		default:
+			break;
+	}
+	
+	this.resourceLack = this.checkIfLackOfResources();
+	this.resourceLackGUI();
+	
   }
   
   this.checkResourcesForQueuedUser = function(){
@@ -276,6 +305,38 @@ function Cell(id, resources, startPosX, startPosY, queuePlacement) {
 		}
 	}
 	
+  }
+  
+  this.checkIfLackOfResources = function(){
+	if(this.eulHsUsersCount == this.hsAdmUsers || this.speechUsersCount == this.speechAdmUsers){
+		return true;
+	}
+  }
+  
+  this.resourceLackGUI = function(){
+	if(this.resourceLack){
+		this.gui.getChildAt(0).color = "red";
+		if(this.eulHsUsersCount == this.hsAdmUsers && this.speechUsersCount == this.speechAdmUsers){
+
+			return;
+		}
+		
+		if(this.eulHsUsersCount == this.hsAdmUsers){
+
+			return;
+		}
+		
+		if(this.speechUsersCount == this.speechAdmUsers){
+
+			return;
+		}
+	}
+  }
+  
+  this.resourceAvailableGUI = function(){
+	if(!this.resourceLack){
+		this.gui.getChildAt(0).animate({obj:{color:WHITE}, time:500});
+	}
   }
 }
 
@@ -386,7 +447,8 @@ function UE(id, startPosX, startPosY, startCell){
 		if(this.psconnection){
 		
 			for(var i = 0; i < this.activeSet.length; i++){
-				getCellById(this.activeSet[i].cellId).eulHsUsersCount++;
+				getCellById(this.activeSet[i].cellId).admissionIncreaseLoad(connectionType.EULHS);
+				//getCellById(this.activeSet[i].cellId).eulHsUsersCount++;
 			}
 			
 			this.gui.getChildAt(0).getChildAt(1).animate({obj:{alpha:1}, time:300});
@@ -418,6 +480,9 @@ function UE(id, startPosX, startPosY, startCell){
 		this.setStartCell(cellArray);
 		
 		this.gui.getChildAt(0).getChildAt(1).animate({obj:{alpha:0}, time:300});
+		
+		
+		SUCCESS('EULHS was successfuly released for UE: ' + this.id );
 		
 		refreshSidebar();
 	}
@@ -480,7 +545,7 @@ function UE(id, startPosX, startPosY, startCell){
 		
 		if(this.csconnection){
 			for(var i = 0; i < this.activeSet.length; i++){
-				getCellById(this.activeSet[i].cellId).speechUsersCount++;
+				getCellById(this.activeSet[i].cellId).admissionIncreaseLoad(connectionType.SPEECH);
 			}
 			
 			this.gui.getChildAt(0).getChildAt(0).animate({obj:{alpha:1}, time:500});
@@ -523,6 +588,9 @@ function UE(id, startPosX, startPosY, startCell){
 			this.setStartCell(cellArray);
 			
 			this.gui.getChildAt(0).getChildAt(0).animate({obj:{alpha:0}, time:500});
+			
+			SUCCESS('Speech was successfuly released for UE: ' + this.id );
+			
 		}
 		
 		refreshSidebar();
@@ -673,20 +741,19 @@ function UE(id, startPosX, startPosY, startCell){
 	
 		switch(this.connectionInfo()){
 			case connectionType.EULHS: 
-				getCellById(cell).eulHsUsersCount++;
+				getCellById(cell).admissionIncreaseLoad(connectionType.EULHS);
 				SUCCESS("UE_" + this.id + ". Soft handover addition. Add Cell_" + cell + " to Active Set");
 				return true;
 			break;
 			case connectionType.SPEECH:
-				getCellById(cell).speechUsersCount++;
+				getCellById(cell).admissionIncreaseLoad(connectionType.SPEECH);
 				
 				SUCCESS("UE_" + this.id + ". Soft handover addition. Add Cell_" + cell + " to Active Set");
 				return true;
 			break;
 			
 			case connectionType.SPEECHEULHS: 
-				getCellById(cell).eulHsUsersCount++;
-				getCellById(cell).speechUsersCount++;
+				getCellById(cell).admissionIncreaseLoad(connectionType.SPEECHEULHS);
 				
 				SUCCESS("UE_" + this.id + ". Soft handover addition. Add Cell_" + cell + " to Active Set");
 				return true;
@@ -918,13 +985,20 @@ function UE(id, startPosX, startPosY, startCell){
 			 cellArray.push(cell_1);
 			 guiAddCell(cell_1, stage);
 			 
+			 cell_1.gui.getChildAt(2).animate({obj:{ scale:1.1}, time:500, loop:true, rewind:true, sequence:50});
+			 
 			 var cell_2 = new Cell(2,10,843,396,'right');
 			 cellArray.push(cell_2);
 			 guiAddCell(cell_2, stage);
 			 
+			 cell_2.gui.getChildAt(2).animate({obj:{ scale:1.1}, time:500, loop:true, rewind:true, sequence:50});
+			 
 			 var cell_3 = new Cell(3,10,617,652,'bottom');
 			 cellArray.push(cell_3);
 			 guiAddCell(cell_3, stage);
+			 
+			 
+			 cell_3.gui.getChildAt(2).animate({obj:{ scale:1.1}, time:500, loop:true, rewind:true, sequence:50});
 			 
 			var addUeGui = new Rectangle(150,200,"white","white",0,40).addTo(stage).reg(0,300).pos(-50,1060).alp(0.5);
 			
@@ -1227,16 +1301,40 @@ function guiAddCell(cell, stage){
 	//add label to gui container
 	
 	var cell_Range = new Circle(cellRange, WHITE);
+	cell_Rage.colorRange = 0.5;
     cell_Range.blendMode = "screen";
 	cell_Range.alpha = .5;
-	cell_Range.addTo(cell.gui);// add the circle to the container and center
+	cell_Range.addTo(cell.gui);// add the circle to the container and center // child 1
 	cell_Range.pos(0,0);
 	
 	
 	//cell label
 	var cell_Label = new Label("Cell_" + cell.id);
-	cell.gui.addChild(cell_Label);
-	cell_Label.pos(-50,-25);
+	cell.gui.addChild(cell_Label); //child2
+	cell_Label.pos(-50,-55);
+	
+	
+	var resourcesInfo = new Container();
+	cell.gui.addChild(resourcesInfo); // child3
+	resourcesInfo.pos(-30,20);
+	resourcesInfo.reg(3,25);
+	resourcesInfo.alp(1);
+	
+	var resourcesInfo_1 = new Label("Lack of", 20);
+	resourcesInfo.addChild(resourcesInfo_1);
+	resourcesInfo_1.pos(0,0);
+	
+    var resourcesInfo_2 = new Label("PS and SPEECH", 20);
+	resourcesInfo.addChild(resourcesInfo_2);
+	resourcesInfo_2.pos(-45,30);
+	
+	//-45 for ps and speech
+	//16 for ps
+	//-9 for cs
+	
+	var resourcesInfo_3 = new Label("resources", 20);
+	resourcesInfo.addChild(resourcesInfo_3);
+	resourcesInfo_3.pos(-13,60);
 	
 	cell.gui.setBounds(0,0);
 }
