@@ -315,27 +315,56 @@ function Cell(id, resources, startPosX, startPosY, queuePlacement) {
   
   this.resourceLackGUI = function(){
 	if(this.resourceLack){
-		this.gui.getChildAt(0).color = "red";
+		
+		this.gui.getChildAt(1).animate({obj:{alpha:0.5}, time:500});
+		this.gui.getChildAt(3).animate({obj:{alpha:1}, time:500});
+		
+			//-45 for ps and speech
+	//16 for ps
+	//-9 for cs
 		if(this.eulHsUsersCount == this.hsAdmUsers && this.speechUsersCount == this.speechAdmUsers){
-
+			this.gui.getChildAt(3).getChildAt(1).text = "PS and SPEECH";
+			this.gui.getChildAt(3).getChildAt(1).pos(-45,30);
 			return;
 		}
 		
 		if(this.eulHsUsersCount == this.hsAdmUsers){
-
+			this.gui.getChildAt(3).getChildAt(1).text = "PS";
+			this.gui.getChildAt(3).getChildAt(1).pos(16,30);
 			return;
 		}
 		
 		if(this.speechUsersCount == this.speechAdmUsers){
-
+			this.gui.getChildAt(3).getChildAt(1).text = "SPEECH";
+			this.gui.getChildAt(3).getChildAt(1).pos(-9,30);
 			return;
 		}
 	}
   }
   
   this.resourceAvailableGUI = function(){
+		if(this.eulHsUsersCount == this.hsAdmUsers && this.speechUsersCount == this.speechAdmUsers){
+			this.gui.getChildAt(3).getChildAt(1).text = "PS and SPEECH";
+			this.gui.getChildAt(3).getChildAt(1).pos(-45,30);
+			return;
+		}
+		
+		if(this.eulHsUsersCount == this.hsAdmUsers){
+			this.gui.getChildAt(3).getChildAt(1).text = "PS";
+			this.gui.getChildAt(3).getChildAt(1).pos(16,30);
+			return;
+		}
+		
+		if(this.speechUsersCount == this.speechAdmUsers){
+			this.gui.getChildAt(3).getChildAt(1).text = "SPEECH";
+			this.gui.getChildAt(3).getChildAt(1).pos(-9,30);
+			return;
+		}
+  
 	if(!this.resourceLack){
-		this.gui.getChildAt(0).animate({obj:{color:WHITE}, time:500});
+		this.gui.getChildAt(1).animate({obj:{alpha:0}, time:500});
+		
+		this.gui.getChildAt(3).animate({obj:{alpha:0}, time:500});
 	}
   }
 }
@@ -985,20 +1014,20 @@ function UE(id, startPosX, startPosY, startCell){
 			 cellArray.push(cell_1);
 			 guiAddCell(cell_1, stage);
 			 
-			 cell_1.gui.getChildAt(2).animate({obj:{ scale:1.1}, time:500, loop:true, rewind:true, sequence:50});
+			 cell_1.gui.getChildAt(3).animate({obj:{ scale:1.1}, time:500, loop:true, rewind:true, sequence:50});
 			 
 			 var cell_2 = new Cell(2,10,843,396,'right');
 			 cellArray.push(cell_2);
 			 guiAddCell(cell_2, stage);
 			 
-			 cell_2.gui.getChildAt(2).animate({obj:{ scale:1.1}, time:500, loop:true, rewind:true, sequence:50});
+			 cell_2.gui.getChildAt(3).animate({obj:{ scale:1.1}, time:500, loop:true, rewind:true, sequence:50});
 			 
 			 var cell_3 = new Cell(3,10,617,652,'bottom');
 			 cellArray.push(cell_3);
 			 guiAddCell(cell_3, stage);
 			 
 			 
-			 cell_3.gui.getChildAt(2).animate({obj:{ scale:1.1}, time:500, loop:true, rewind:true, sequence:50});
+			 cell_3.gui.getChildAt(3).animate({obj:{ scale:1.1}, time:500, loop:true, rewind:true, sequence:50});
 			 
 			var addUeGui = new Rectangle(150,200,"white","white",0,40).addTo(stage).reg(0,300).pos(-50,1060).alp(0.5);
 			
@@ -1301,24 +1330,29 @@ function guiAddCell(cell, stage){
 	//add label to gui container
 	
 	var cell_Range = new Circle(cellRange, WHITE);
-	cell_Rage.colorRange = 0.5;
     cell_Range.blendMode = "screen";
 	cell_Range.alpha = .5;
 	cell_Range.addTo(cell.gui);// add the circle to the container and center // child 1
 	cell_Range.pos(0,0);
 	
+	var cell_Range_lack = new Circle(cellRange, "red");
+    cell_Range_lack.blendMode = "multiply";
+	cell_Range_lack.alpha = 0;
+	cell_Range_lack.addTo(cell.gui);// add the circle to the container and center // child 2
+	cell_Range_lack.pos(0,0);
+	
 	
 	//cell label
 	var cell_Label = new Label("Cell_" + cell.id);
-	cell.gui.addChild(cell_Label); //child2
+	cell.gui.addChild(cell_Label); //child3
 	cell_Label.pos(-50,-55);
 	
 	
 	var resourcesInfo = new Container();
-	cell.gui.addChild(resourcesInfo); // child3
+	cell.gui.addChild(resourcesInfo); // child4
 	resourcesInfo.pos(-30,20);
 	resourcesInfo.reg(3,25);
-	resourcesInfo.alp(1);
+	resourcesInfo.alp(0);
 	
 	var resourcesInfo_1 = new Label("Lack of", 20);
 	resourcesInfo.addChild(resourcesInfo_1);
