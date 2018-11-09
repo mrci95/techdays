@@ -308,7 +308,7 @@ function Cell(id, resources, startPosX, startPosY, queuePlacement) {
   }
   
   this.checkIfLackOfResources = function(){
-	if(this.eulHsUsersCount == this.hsAdmUsers || this.speechUsersCount == this.speechAdmUsers){
+	if(this.eulHsUsersCount >= this.hsAdmUsers || this.speechUsersCount >= this.speechAdmUsers){
 		return true;
 	}
   }
@@ -322,19 +322,19 @@ function Cell(id, resources, startPosX, startPosY, queuePlacement) {
 			//-45 for ps and speech
 	//16 for ps
 	//-9 for cs
-		if(this.eulHsUsersCount == this.hsAdmUsers && this.speechUsersCount == this.speechAdmUsers){
+		if(this.eulHsUsersCount >= this.hsAdmUsers && this.speechUsersCount >= this.speechAdmUsers){
 			this.gui.getChildAt(3).getChildAt(1).text = "PS and SPEECH";
 			this.gui.getChildAt(3).getChildAt(1).pos(-45,30);
 			return;
 		}
 		
-		if(this.eulHsUsersCount == this.hsAdmUsers){
+		if(this.eulHsUsersCount >= this.hsAdmUsers){
 			this.gui.getChildAt(3).getChildAt(1).text = "PS";
 			this.gui.getChildAt(3).getChildAt(1).pos(16,30);
 			return;
 		}
 		
-		if(this.speechUsersCount == this.speechAdmUsers){
+		if(this.speechUsersCount >= this.speechAdmUsers){
 			this.gui.getChildAt(3).getChildAt(1).text = "SPEECH";
 			this.gui.getChildAt(3).getChildAt(1).pos(-9,30);
 			return;
@@ -343,19 +343,19 @@ function Cell(id, resources, startPosX, startPosY, queuePlacement) {
   }
   
   this.resourceAvailableGUI = function(){
-		if(this.eulHsUsersCount == this.hsAdmUsers && this.speechUsersCount == this.speechAdmUsers){
+		if(this.eulHsUsersCount >= this.hsAdmUsers && this.speechUsersCount >= this.speechAdmUsers){
 			this.gui.getChildAt(3).getChildAt(1).text = "PS and SPEECH";
 			this.gui.getChildAt(3).getChildAt(1).pos(-45,30);
 			return;
 		}
 		
-		if(this.eulHsUsersCount == this.hsAdmUsers){
+		if(this.eulHsUsersCount >= this.hsAdmUsers){
 			this.gui.getChildAt(3).getChildAt(1).text = "PS";
 			this.gui.getChildAt(3).getChildAt(1).pos(16,30);
 			return;
 		}
 		
-		if(this.speechUsersCount == this.speechAdmUsers){
+		if(this.speechUsersCount >= this.speechAdmUsers){
 			this.gui.getChildAt(3).getChildAt(1).text = "SPEECH";
 			this.gui.getChildAt(3).getChildAt(1).pos(-9,30);
 			return;
@@ -1548,6 +1548,13 @@ function setCellSettings(id){
 	  }, 1000);
 	  
 	});
+	
+	cell.resourceLack = cell.checkIfLackOfResources();
+	if(	cell.resourceLack){
+		cell.resourceLackGUI();
+	}else{
+		cell.resourceAvailableGUI();
+	}
 	
 }
 
