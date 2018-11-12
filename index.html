@@ -1354,9 +1354,9 @@ function guiAddCell(cell, stage){
 	resourcesInfo.reg(3,25);
 	resourcesInfo.alp(0);
 	
-	var resourcesInfo_1 = new Label("Lack of", 20);
+	var resourcesInfo_1 = new Label("Lack of resources for next", 20);
 	resourcesInfo.addChild(resourcesInfo_1);
-	resourcesInfo_1.pos(0,0);
+	resourcesInfo_1.pos(-80,0);
 	
     var resourcesInfo_2 = new Label("PS and SPEECH", 20);
 	resourcesInfo.addChild(resourcesInfo_2);
@@ -1366,7 +1366,7 @@ function guiAddCell(cell, stage){
 	//16 for ps
 	//-9 for cs
 	
-	var resourcesInfo_3 = new Label("resources", 20);
+	var resourcesInfo_3 = new Label("connection", 20);
 	resourcesInfo.addChild(resourcesInfo_3);
 	resourcesInfo_3.pos(-13,60);
 	
@@ -2171,14 +2171,14 @@ function closeFullscreen() {
     <!-- Modal content-->
     <div class="modal-content">
       <div class="modal-header">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+		<button type="button" onclick="clearLogs();" class="btn btn-default" >Clear logs monitor</button>
         <button type="button" class="close" data-dismiss="modal">&times;</button>
         <h4 class="modal-title">Logs</h4>
       </div>
       <div class="modal-body">
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-		<button type="button" onclick="clearLogs();" class="btn btn-default" >Clear logs monitor</button>
       </div>
     </div>
 
