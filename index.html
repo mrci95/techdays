@@ -494,6 +494,9 @@ function UE(id, startPosX, startPosY, startCell){
 	
 	this.stopPsConnection = function(){
 	
+		if(this.psconnection)
+			SUCCESS('EULHS was successfuly released for UE: ' + this.id );
+	
 		this.psconnection = false;
 		
 		//TODO update info about connection
@@ -511,7 +514,6 @@ function UE(id, startPosX, startPosY, startCell){
 		this.gui.getChildAt(0).getChildAt(1).animate({obj:{alpha:0}, time:300});
 		
 		
-		SUCCESS('EULHS was successfuly released for UE: ' + this.id );
 		
 		refreshSidebar();
 	}
@@ -1127,6 +1129,8 @@ function UE(id, startPosX, startPosY, startCell){
 				
 				if(!isNaN(e.target.name)){
 					
+					getUeSettings(e.target.name);
+					
 					//Check if UE was released on removeUeIcon
 					if(getUeById(e.target.name).gui.hitTestRect(addUeGui)){
 						deleteUe(e.target.name);
@@ -1148,6 +1152,8 @@ function UE(id, startPosX, startPosY, startCell){
 			});
 			
 			ueGuiContainer.on("mousedown", function(e){
+				
+				
 				
 				removeUeIcons.alp(1);
 				addUeIcon.alp(0);
@@ -1755,6 +1761,7 @@ function prepareUeSettingsPanel(id){
 		if(sidebarElements[i][6]){ //mobility behavior collapse
 			ueMobilityBehaviorCollapse = true;
 		}
+		ueActionsCollapse = true;
 	}
 	
  }
